@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.8]
+        python-version: [3.13.4]
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -30,14 +30,3 @@ jobs:
     - name: Run tests with coverage
       run: |
         python manage.py test
-
-
-
-
-
-
-
-
-
-
-
