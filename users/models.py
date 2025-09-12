@@ -23,15 +23,15 @@ class User(models.Model):
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     national_id = models.CharField(max_length=10)
-    image_url = models.URLField(max_length=255)
+    image_url = models.URLField(max_length=255,null=True,blank=True)
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.email})"
 
-class Portfolio(models.Model):
+class ArtisanPortfolio(models.Model):
     portfolio_id = models.AutoField(primary_key=True)
-    artisan_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name='portfolios',limit_choices_to={'user_type': 'artisan'})
-    image_url = models.URLField(max_length=255)
+    artisan_id = models.ForeignKey(User, on_delete=models.CASCADE,limit_choices_to={'user_type': 'artisan'})
+    image_urls = models.JSONField(default=list, blank=True)
     title = models.CharField(max_length=100)
     description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
