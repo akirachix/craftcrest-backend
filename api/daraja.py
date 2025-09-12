@@ -77,15 +77,15 @@ class DarajaAPI:
             "Content-Type": "application/json",
         }
         payload = {
-            "InitiatorName": settings.DARAJA_INITIATOR_NAME,     # Add this to your .env/settings.py
-            "SecurityCredential": settings.DARAJA_SECURITY_CREDENTIAL, # Add this to your .env/settings.py
+            "InitiatorName": settings.DARAJA_INITIATOR_NAME,    
+            "SecurityCredential": settings.DARAJA_SECURITY_CREDENTIAL, 
             "CommandID": "BusinessPayment",
             "Amount": str(int(amount)),
             "PartyA": self.business_shortcode,
             "PartyB": artisan_phone,
             "Remarks": transaction_desc,
-            "QueueTimeOutURL": settings.DARAJA_B2C_TIMEOUT_URL,   # Add this to your .env/settings.py
-            "ResultURL": settings.DARAJA_B2C_RESULT_URL,          # Add this to your .env/settings.py
+            "QueueTimeOutURL": settings.DARAJA_B2C_TIMEOUT_URL,  
+            "ResultURL": settings.DARAJA_B2C_RESULT_URL,        
             "Occasion": occassion,
         }
         url = f"{self.base_url}/mpesa/b2c/v1/paymentrequest"
