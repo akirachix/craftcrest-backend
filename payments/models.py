@@ -1,13 +1,18 @@
 from django.db import models
-from users.models import User
-from orders.models import Order
-class Payment(models.Model):
-    order_id = models.ForeignKey(Order, on_delete=models.CASCADE)
-    artisan_id = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'user_type': 'artisan'})
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    transaction_code = models.CharField(max_length=50)
-    status = models.CharField(max_length=20)
-    paid_at = models.DateTimeField()
-    released_at = models.DateTimeField(null=True, blank=True)
-    held_by_platform = models.BooleanField(default=True)
 
+class Payment(models.Model):
+    STATUS_CHOICES = (
+        ('held', 'Held'),
+        ('released', 'Released'),
+        ('refunded', 'Refunded'),
+    )
+    buyer_phone = models.CharField(max_length=15, default="UNKNOWN")
+    artisan_phone = models.CharField(max_length=15, default="UNKNOWN")
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='held')
+    transaction_id = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'Payment {self.transaction_id} - Status: {self.status}'
