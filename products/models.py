@@ -8,6 +8,7 @@ class Inventory(models.Model):
     ('weaving', 'Weaving'),
     ('crocheting', 'Crocheting'),
     ('ceramics', 'Ceramics'),
+    ('jewelry','jewerly'),
    
 ]
     artisan_id = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'user_type': 'artisan'})
