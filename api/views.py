@@ -10,7 +10,6 @@ from users.models import Profile
 import django_filters.rest_framework
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import serializers
-
 from .serializers import (
     UserRegistrationSerializer,
     LoginSerializer,
@@ -115,14 +114,18 @@ class ArtisanPortfolioViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        if not user.is_authenticated:
+            return ArtisanPortfolio.objects.none()
         if user.user_type == 'ADMIN':
             return ArtisanPortfolio.objects.all()
         return ArtisanPortfolio.objects.filter(artisan=user)
 
     def perform_create(self, serializer):
-        if self.request.user.user_type != 'ARTISAN':
+        user = self.request.user
+        if not user.is_authenticated or user.user_type != 'ARTISAN':
             raise serializers.ValidationError({"detail": "Only artisans can create portfolios."})
-        serializer.save(artisan=self.request.user)
+        serializer.save(artisan=user)
+
 
 
 

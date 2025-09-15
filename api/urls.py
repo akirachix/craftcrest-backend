@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     UserRegistrationView, LoginView, ForgotPasswordView,
     OTPVerificationView, PasswordResetView,
-    AdminListUsersView, UserViewSet, ArtisanPortfolioViewSet
+    AdminListUsersView, UserViewSet, ArtisanPortfolioViewSet, UserProfileView
 )
 
 artisan_portfolio_list = ArtisanPortfolioViewSet.as_view({'get': 'list', 'post': 'create'})
@@ -23,4 +23,5 @@ urlpatterns = [
     path('reset-password/', PasswordResetView.as_view(), name='reset-password'),
     path('admin/users/', AdminListUsersView.as_view(), name='admin-list-users'),
     path('artisan-portfolio/', artisan_portfolio_list, name='artisan-portfolio-list'),
+    path('profile/',UserProfileView.as_view(), name = 'user-profile')
 ]
