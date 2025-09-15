@@ -25,19 +25,14 @@ load_dotenv(dotenv_path=BASE_DIR / '.env')
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-# SECRET_KEY = os.getenv('SECRET_KEY')
-SECRET_KEY = config('SECRET_KEY')
+SECRET_KEY = config('SECRET_KEY', default='craftcrestapp@2025')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = os.getenv('DEBUG', 'True') == 'True'
+
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-# Allowed hosts from comma-separated string or default localhost
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
-# Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
