@@ -7,6 +7,7 @@ from .utils import haversine
 from django.db.models.functions import ACos, Cos, Radians, Sin
 from users.models import User
 from api.serializers import UserSerializer, NearbyArtisanSearchSerializer
+from users.models import ArtisanPortfolio
 
 
 class NearbyArtisansView(APIView):
@@ -47,7 +48,6 @@ class NearbyArtisansView(APIView):
 
         results = sorted(results, key=lambda x: x['distance_km'])
         return Response({"artisans": results})
-
 
 
 class UserViewSet(viewsets.ModelViewSet):
