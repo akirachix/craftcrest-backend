@@ -22,7 +22,12 @@ class Order(models.Model):
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     rejection_reason = models.CharField(max_length=50, blank=True, null=True)
     delivery_confirmed = models.BooleanField(default=False)
-    rejection_date = models.DateTimeField(null=True, blank=True)
+    rejection_date = models.DateTimeField(blank=True, null=True)
+    payment_status = models.CharField(
+        max_length=20,
+        choices=[('pending', 'Pending'), ('completed', 'Completed'), ('failed', 'Failed')],
+        default='pending'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -77,3 +82,6 @@ class Rating(models.Model):
     rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     review_text = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('order_id', 'buyer_id')
