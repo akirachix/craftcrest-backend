@@ -1,4 +1,3 @@
-
 from django.core.validators import validate_email, URLValidator
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.contrib.auth.password_validation import validate_password
