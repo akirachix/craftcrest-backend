@@ -25,3 +25,10 @@ class STKPushSerializer(serializers.Serializer):
         if not data.get('buyer_phone'):
             data['buyer_phone'] = buyer.phone_number
         return data
+
+class DeliveryConfirmSerializer(serializers.Serializer):
+    order_id = serializers.IntegerField()
+
+class RefundSerializer(serializers.Serializer):
+    order_id = serializers.IntegerField()
+    reason = serializers.CharField(max_length=255)
