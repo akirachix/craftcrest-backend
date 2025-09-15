@@ -42,6 +42,7 @@ class OrderTrackingViewSet(viewsets.ModelViewSet):
     queryset = OrderTracking.objects.all()
     serializer_class = OrderTrackingSerializer
 
+
 class CustomDesignRequestViewSet(viewsets.ModelViewSet):
     queryset = CustomDesignRequest.objects.all()
     serializer_class = CustomDesignRequestSerializer
