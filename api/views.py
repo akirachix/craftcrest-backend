@@ -37,23 +37,10 @@ class RatingViewSet(viewsets.ModelViewSet):
     queryset = Rating.objects.all()
     serializer_class = RatingSerializer
 
-    def get_queryset(self):
-        user = self.request.user
-        if hasattr(user, 'buyer_ratings'):
-            return Rating.objects.filter(buyer_id=user)
-        elif hasattr(user, 'artisan_ratings'):
-            return Rating.objects.filter(artisan_id=user)
-        return Rating.objects.none()
 
 class OrderTrackingViewSet(viewsets.ModelViewSet):
     queryset = OrderTracking.objects.all()
     serializer_class = OrderTrackingSerializer
-
-    def get_queryset(self):
-        user = self.request.user
-        if hasattr(user, 'artisan_trackings'):
-            return OrderTracking.objects.filter(artisan_id=user)
-        return OrderTracking.objects.none()
 
 class CustomDesignRequestViewSet(viewsets.ModelViewSet):
     queryset = CustomDesignRequest.objects.all()
