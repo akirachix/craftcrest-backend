@@ -105,7 +105,7 @@ class AdminListUsersView(generics.ListAPIView):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = CustomUserSerializer
-    permission_classes = [IsAuthenticated, AdminPermission]
+    # permission_classes = [IsAuthenticated, AdminPermission]
 
 
 class ArtisanPortfolioViewSet(viewsets.ModelViewSet):
