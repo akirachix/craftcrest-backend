@@ -4,7 +4,8 @@ from .views import (
     PaymentViewSet,
     daraja_callback,
     STKPushView,
-    B2CPaymentView,
+    DeliveryConfirmView,
+    RefundPaymentView
 )
 
 router = DefaultRouter()
@@ -14,5 +15,6 @@ urlpatterns = [
     path("", include(router.urls)), 
     path('daraja/stk-push/', STKPushView.as_view(), name='daraja-stk-push'),
     path('daraja/callback/', daraja_callback, name='daraja-callback'),
-    path('daraja/b2c-payment/', B2CPaymentView.as_view(), name='daraja-b2c-payment'),
+    path('delivery/confirm/', DeliveryConfirmView.as_view(), name='delivery-confirm'),
+    path('payment/refund/', RefundPaymentView.as_view(), name='payment-refund'),
 ]
