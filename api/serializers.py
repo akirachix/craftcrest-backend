@@ -9,8 +9,6 @@ class CartItemSerializer(serializers.ModelSerializer):
 
 
 class ShoppingCartSerializer(serializers.ModelSerializer):
-    
-     # Nested user serializer to show user details
     items = CartItemSerializer(many=True, read_only=True)
     total_price = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     total_items = serializers.IntegerField(read_only=True)
