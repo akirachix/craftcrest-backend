@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from datetime import timedelta
 import random
 
@@ -39,12 +40,12 @@ class User(AbstractBaseUser, PermissionsMixin):
         BUYER = "BUYER", "Buyer"
         
     user_id = models.AutoField(primary_key=True)
-    user_type = models.CharField(max_length=10, choices=UserType.choices, default=UserType.BUYER, blank=True)
+    user_type = models.CharField(max_length=10, choices=UserType.choices, default=UserType.BUYER, blank=True,validators=[RegexValidator(r'^\d{10}$', 'Phone number must be exactly 10 digits.')])
     first_name = models.CharField(max_length=50, blank=True, null=True)
     last_name = models.CharField(max_length=50, blank=True, null=True)
     email = models.EmailField(max_length=254, unique=True)
     phone_number = models.CharField(max_length=10, unique=True, null=True, blank=True)
-    national_id = models.CharField(max_length=10, null=True, blank=True)
+    national_id = models.CharField(max_length=10, null=True, blank=True,validators=[RegexValidator(r'^\d{10}$', 'National ID must be 8 digits.')])
     image_url = models.URLField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
@@ -134,14 +135,11 @@ class ArtisanPortfolio(models.Model):
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     image_urls = models.JSONField(default=list, blank=True)
+
     def __str__(self):
         return f"{self.title or 'Untitled'} - {self.artisan.email or self.artisan.phone_number}"
+
     def clean(self):
         if self.artisan.user_type != "ARTISAN":
             raise ValidationError("Portfolio can only be linked to an artisan user.")
-        if self.image_urls:
-            if len(self.image_urls) < 10:
-                raise ValidationError("At least 10 image URLs are required.")
-            for url in self.image_urls:
-                if not isinstance(url, str) or not url.startswith(('http://', 'https://')):
-                    raise ValidationError(f"Invalid URL in image_urls: {url}")
+        

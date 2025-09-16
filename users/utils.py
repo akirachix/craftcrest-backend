@@ -1,22 +1,27 @@
-from datetime import datetime
-import random
 from django.conf import settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
+from django.template import TemplateDoesNotExist
 import logging
 
 logger = logging.getLogger(__name__)
 
-def generate_otp():
-    return str(random.randint(100000, 999999))
-
-def send_forgot_password_email(email, otp):
+def send_otp_email(email, otp, purpose='verify'):
+    
     if not email:
-        raise ValueError("Email address is required for sending OTP email.")
-    subject = 'Reset Your Password - CraftCrest App'
-    message = f'Your password reset code is: {otp}. Use this to reset your password.'
-    html_message = render_to_string('emails/forgot_password.html', {'otp': otp})
-    logger.debug(f"Sending forgot password email to {email} with OTP {otp}")
+        raise ValueError("Email address is required.")
+    if purpose not in ['verify', 'reset']:
+        raise ValueError("Purpose must be 'verify' or 'reset'.")
+    subject = 'Verify Your Email - CraftCrest App' if purpose == 'verify' else 'Reset Your Password - CraftCrest App'
+    template = 'emails/verification.html' if purpose == 'verify' else 'emails/forgot_password.html'
+    message = f'Your {"verification" if purpose == "verify" else "password reset"} code is: {otp}'
+    html_message = None
+    try:
+        html_message = render_to_string(template, {'otp': otp})
+    except TemplateDoesNotExist as e:
+        logger.error(f"Template {template} not found, falling back to plain text")
+        html_message = None
+    logger.debug(f"Sending {purpose} email to {email} with OTP {otp}")
     send_mail(
         subject=subject,
         message=message,
@@ -25,20 +30,4 @@ def send_forgot_password_email(email, otp):
         html_message=html_message,
         fail_silently=False,
     )
-    logger.debug(f"Forgot password email with OTP {otp} sent to {email}")
-
-def send_verification_email(email, otp):
-    subject = 'Verify Your Email - CraftCrest App'
-    message = f'Your verification code is: {otp}'
-    html_message = render_to_string('emails/verification.html', {'otp': otp})
-    if not email:
-        raise ValueError("Email address is required for sending verification email.")
-    send_mail(
-        subject=subject,
-        message=message,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[email],
-        html_message=html_message,
-        fail_silently=False,
-    )
-    logger.debug(f"Verification email with OTP {otp} sent to {email}")
+    logger.debug(f"{purpose.capitalize()} email with OTP {otp} sent to {email}")

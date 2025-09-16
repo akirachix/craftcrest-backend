@@ -6,8 +6,6 @@ from .views import (
     AdminListUsersView, UserViewSet, ArtisanPortfolioViewSet, UserProfileView
 )
 
-artisan_portfolio_list = ArtisanPortfolioViewSet.as_view({'get': 'list', 'post': 'create'})
-artisan_portfolio_detail = ArtisanPortfolioViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet)
@@ -22,6 +20,5 @@ urlpatterns = [
     path('verify-otp/', OTPVerificationView.as_view(), name='verify-otp'),
     path('reset-password/', PasswordResetView.as_view(), name='reset-password'),
     path('admin/users/', AdminListUsersView.as_view(), name='admin-list-users'),
-    path('artisan-portfolio/', artisan_portfolio_list, name='artisan-portfolio-list'),
     path('profile/',UserProfileView.as_view(), name = 'user-profile')
 ]

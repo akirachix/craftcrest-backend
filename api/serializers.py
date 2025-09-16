@@ -6,7 +6,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from rest_framework.authtoken.models import Token
 from users.models import User, ArtisanPortfolio, Profile
-from users.utils import send_forgot_password_email
+from users.utils import send_otp_email 
 
 class ArtisanPortfolioSerializer(serializers.ModelSerializer):
     class Meta:
@@ -90,7 +90,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                     "latitude": "Latitude is required for artisans.",
                     "longitude": "Longitude is required for artisans."
                 })
-
             portfolio_serializer = ArtisanPortfolioSerializer(data=portfolio_data)
             portfolio_serializer.is_valid(raise_exception=True)
         else:
@@ -110,7 +109,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         if user.user_type == "ARTISAN" and portfolio_data:
             ArtisanPortfolio.objects.create(artisan=user, **portfolio_data)
         user.generate_otp()
-        send_forgot_password_email(user.email, user.otp)
+        send_otp_email(user.email, user.otp, purpose='verify') 
         return user
 
 class LoginSerializer(serializers.Serializer):
@@ -135,13 +134,12 @@ class LoginSerializer(serializers.Serializer):
         data["token"] = token.key
         return data
 
-
 class CustomUserSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     class Meta:
         model = User
-        fields = [ "email", "full_name", "phone_number", "image_url", "user_type"]
-        read_only_fields = [ "email", "user_type"]
+        fields = ["email", "full_name", "phone_number", "image_url", "user_type"]
+        read_only_fields = ["email", "user_type"]
     def get_full_name(self, obj):
         return f"{obj.first_name or ''} {obj.last_name or ''}".strip()
 
@@ -161,7 +159,7 @@ class ForgotPasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError("User with this email does not exist.")
         try:
             user.generate_otp()
-            send_forgot_password_email(user.email, user.otp)
+            send_otp_email(user.email, user.otp, purpose='reset') 
         except Exception as e:
             raise serializers.ValidationError(f"Failed to send OTP email: {str(e)}")
         return value
@@ -195,7 +193,7 @@ class ResendOTPSerializer(serializers.Serializer):
         if user.is_active:
             raise serializers.ValidationError({"email": "This account is already verified."})
         user.generate_otp()
-        send_forgot_password_email(user.email, user.otp)
+        send_otp_email(user.email, user.otp, purpose='verify') 
         return {"message": "A new OTP has been sent to your email."}
 
 class PasswordResetSerializer(serializers.Serializer):
@@ -224,10 +222,3 @@ class PasswordResetSerializer(serializers.Serializer):
         user.otp_verified = False
         user.save()
         return user
-
-
-
-
-
-
-        
