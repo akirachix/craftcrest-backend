@@ -11,7 +11,7 @@ class Inventory(models.Model):
     ('jewelry','jewerly'),
    
 ]
-    artisan_id = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'user_type': 'artisan'})
+    artisan= models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'user_type': 'artisan'})
     product_name = models.CharField(max_length=100)
     description = models.TextField()
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
