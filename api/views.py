@@ -36,7 +36,7 @@ class UserRegistrationView(generics.CreateAPIView):
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = ProfileSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get_object(self):
         try:
@@ -104,13 +104,13 @@ class AdminListUsersView(generics.ListAPIView):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = CustomUserSerializer
-    # permission_classes = [IsAuthenticated, AdminPermission]
+    permission_classes = [IsAuthenticated, AdminPermission]
 
 
 class ArtisanPortfolioViewSet(viewsets.ModelViewSet):
     queryset = ArtisanPortfolio.objects.all()
     serializer_class = ArtisanPortfolioSerializer
-    # permission_classes = [IsAuthenticated, ArtisanPermission]
+    permission_classes = [IsAuthenticated, ArtisanPermission]
 
     def get_queryset(self):
         user = self.request.user

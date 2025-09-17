@@ -8,12 +8,6 @@ def create_profile(sender, instance, created, **kwargs):
         Profile.objects.create(user=instance)
 
 @receiver(post_save, sender=User)
-def save_profile(sender, instance, **kwargs):
-    if hasattr(instance, 'profile') and instance.profile.is_modified():  # Assuming Django tracks changes
-        instance.profile.save()
-
-
-@receiver(post_save, sender=User)
 def create_artisan_profile(sender, instance, created, **kwargs):
     if created and instance.user_type == 'ARTISAN':
         ArtisanProfile.objects.create(user=instance)
