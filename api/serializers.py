@@ -34,11 +34,6 @@ class OrderSerializer(serializers.ModelSerializer):
 
         return value
 
-    def validate_idempotency_key(self, value):
-        if Order.objects.filter(idempotency_key=value).exists():
-            raise serializers.ValidationError("Idempotency key must be unique.")
-        return value
-
 
 class RatingSerializer(serializers.ModelSerializer):
     order = OrderSerializer(read_only=True)
