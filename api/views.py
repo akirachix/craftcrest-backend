@@ -10,7 +10,6 @@ from .serializers import (
 )
 from payments.models import Payment
 from orders.models import Order
-from users.models import User
 from django.utils import timezone
 import datetime
 from .daraja import DarajaAPI
@@ -151,3 +150,21 @@ def auto_release_payments():
                 payment.save()
             except Exception:
                 continue
+
+
+class B2CPaymentView(APIView):
+    def post(self, request):
+        data = request.data
+        daraja = DarajaAPI()
+        try:
+            response = daraja.b2c_payment(
+                artisan_phone=data["artisan_phone"],
+                amount=data["amount"],
+                transaction_id=data["transaction_id"],
+                transaction_desc=data.get("transaction_desc", ""),
+                occassion=data.get("occassion", ""),
+            )
+            return Response(response, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+

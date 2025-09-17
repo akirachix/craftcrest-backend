@@ -1,7 +1,6 @@
 from .daraja import DarajaAPI
 from payments.models import Payment
 from orders.models import Order
-from users.models import User
 from rest_framework import serializers
 
 class PaymentSerializer(serializers.ModelSerializer):
@@ -32,3 +31,4 @@ class DeliveryConfirmSerializer(serializers.Serializer):
 class RefundSerializer(serializers.Serializer):
     order_id = serializers.IntegerField()
     reason = serializers.CharField(max_length=255)
+
