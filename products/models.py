@@ -1,5 +1,7 @@
 from django.db import models
 from users.models import User
+from django.conf import settings
+
 class Inventory(models.Model):
     CATEGORY_CHOICES = [
     ('pottery', 'Pottery'),
@@ -10,13 +12,13 @@ class Inventory(models.Model):
     ('ceramics', 'Ceramics'),
    
 ]
-    artisan_id = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'user_type': 'artisan'})
+    artisan = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     product_name = models.CharField(max_length=100)
     description = models.TextField()
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     stock_quantity = models.IntegerField()
-    image_url = models.URLField()
+    image = models.ImageField(upload_to='product_images/', default=None)
     is_customizable = models.BooleanField(default=False)
     custom_options = models.TextField(blank=True, null=True) 
     created_at = models.DateTimeField(auto_now_add=True)

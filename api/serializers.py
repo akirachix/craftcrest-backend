@@ -1,9 +1,6 @@
 from rest_framework import serializers
 from django.conf import settings
-from orders.models import Order, Rating, OrderTracking, CustomDesignRequest
-
-
-from rest_framework import serializers
+from orders.models import Order, Rating, OrderStatus, CustomDesignRequest
 from orders.models import Order
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -48,11 +45,11 @@ class RatingSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Rating must be between 1 and 5.")
         return value
 
-class OrderTrackingSerializer(serializers.ModelSerializer):
+class OrderStatusSerializer(serializers.ModelSerializer):
     order = OrderSerializer(read_only=True)
 
     class Meta:
-        model = OrderTracking
+        model = OrderStatus
         fields = '__all__'
         read_only_fields = ['tracking_id', 'update_timestamp', 'created_at', 'approval_timestamp']
 

@@ -4,10 +4,10 @@ from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated  
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
-from orders.models import Order, Rating, OrderTracking, CustomDesignRequest
+from orders.models import Order, Rating, OrderStatus, CustomDesignRequest
 from .serializers import (
     OrderSerializer, RatingSerializer,
-    OrderTrackingSerializer, CustomDesignRequestSerializer
+    OrderStatusSerializer, CustomDesignRequestSerializer
 )
 
 class OrderViewSet(viewsets.ModelViewSet):
@@ -38,9 +38,9 @@ class RatingViewSet(viewsets.ModelViewSet):
     serializer_class = RatingSerializer
 
 
-class OrderTrackingViewSet(viewsets.ModelViewSet):
-    queryset = OrderTracking.objects.all()
-    serializer_class = OrderTrackingSerializer
+class OrderStatusViewSet(viewsets.ModelViewSet):
+    queryset = OrderStatus.objects.all()
+    serializer_class = OrderStatusSerializer
 
 class CustomDesignRequestViewSet(viewsets.ModelViewSet):
     queryset = CustomDesignRequest.objects.all()
