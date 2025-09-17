@@ -56,12 +56,12 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         serializer.save()
 
-    def destroy(self, request, *args, **kwargs):
+    def delete_cart(self, request, *args, **kwargs):
         instance = self.get_object()
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    def perform_destroy(self, instance):
+    def perform_delete(self, instance):
         instance.delete()
 
 
@@ -92,7 +92,7 @@ class CartItemViewSet(viewsets.ViewSet):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def destroy(self, request, pk=None):
+    def delete_cart_item(self, request, pk=None):
         user = request.user
         if isinstance(user, str):
             user = User.objects.get(username=user)
