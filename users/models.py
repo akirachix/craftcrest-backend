@@ -40,11 +40,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         BUYER = "BUYER", "Buyer"
         
     user_id = models.AutoField(primary_key=True)
-    user_type = models.CharField(max_length=10, choices=UserType.choices, default=UserType.BUYER, blank=True,validators=[RegexValidator(r'^\d{10}$', 'Phone number must be exactly 10 digits.')])
+    user_type = models.CharField(max_length=10, choices=UserType.choices, default=UserType.BUYER, blank=True)
     first_name = models.CharField(max_length=50, blank=True, null=True)
     last_name = models.CharField(max_length=50, blank=True, null=True)
     email = models.EmailField(max_length=254, unique=True)
-    phone_number = models.CharField(max_length=10, unique=True, null=True, blank=True)
+    phone_number = models.CharField(max_length=10, unique=True, null=True, blank=True,validators=[RegexValidator(r'^\d{10}$', 'Phone number must be exactly 10 digits.')])
     national_id = models.CharField(max_length=10, null=True, blank=True,validators=[RegexValidator(r'^\d{10}$', 'National ID must be 8 digits.')])
     image_url = models.URLField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
