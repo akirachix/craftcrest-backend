@@ -2,9 +2,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, viewsets
-from django.db.models import F, FloatField
 from .utils import haversine
-from django.db.models.functions import ACos, Cos, Radians, Sin
 from users.models import User
 from api.serializers import UserSerializer, NearbyArtisanSearchSerializer
 from users.models import ArtisanPortfolio
