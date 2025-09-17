@@ -1,7 +1,24 @@
 from rest_framework import serializers
+from cart.models import ShoppingCart
+from products.models import Inventory
+
 from django.conf import settings
 from orders.models import Order, Rating, OrderStatus, CustomDesignRequest
 from orders.models import Order
+
+class ShoppingCartSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShoppingCart
+        fields = '__all__'
+       
+
+
+
+class InventorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Inventory
+        fields = '__all__'
+
 
 class OrderSerializer(serializers.ModelSerializer):
     class Meta:
@@ -58,3 +75,4 @@ class CustomDesignRequestSerializer(serializers.ModelSerializer):
         model = CustomDesignRequest
         fields = '__all__'
         read_only_fields = ['request_id', 'created_at']
+

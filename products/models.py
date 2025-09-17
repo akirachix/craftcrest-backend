@@ -10,8 +10,10 @@ class Inventory(models.Model):
     ('weaving', 'Weaving'),
     ('crocheting', 'Crocheting'),
     ('ceramics', 'Ceramics'),
+    ('jewelry','jewerly'),
    
 ]
+
     artisan = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     product_name = models.CharField(max_length=100)
     description = models.TextField()
