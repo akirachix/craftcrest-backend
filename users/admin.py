@@ -16,13 +16,26 @@ class ArtisanProfileAdmin(admin.ModelAdmin):
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ('email', 'user_type', 'is_active', 'image_url')  
+    list_display = ('email', 'user_type', 'is_active', 'image')  
     list_filter = ('user_type',)
     search_fields = ('email',)
 
+    def display_image(self, obj):
+        if obj.image:
+            return format_html('<img src="{}" width="50" height="50" />', obj.image.url)
+        return "No image"
+    display_image.short_description = "Profile Image"
+
+    def get_profile_image_url(self, obj):
+        try:
+            return format_html('<a href="{}">{}</a>', obj.profile.image_url, obj.profile.image_url) if obj.profile.image_url else "No image URL"
+        except Profile.DoesNotExist:
+            return "No profile"
+    get_profile_image_url.short_description = "Profile Image URL"
+
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'image_url')  
+    list_display = ('user', 'image')  
     search_fields = ('user__email',)
 
 @admin.register(ArtisanPortfolio)

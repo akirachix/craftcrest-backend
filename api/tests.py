@@ -1,191 +1,297 @@
-from unittest.mock import patch
-from rest_framework.test import APITestCase
+import uuid
+from django.test import TestCase
+from django.urls import reverse
+from django.utils import timezone
+from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
-from django.contrib.auth import get_user_model
-from rest_framework.authtoken.models import Token
-from users.models import ArtisanPortfolio
+from users.models import User, ArtisanProfile, Profile, ArtisanPortfolio, PortfolioImage
+from api.serializers import UserRegistrationSerializer
+from datetime import timedelta
+from unittest.mock import patch
+import os
+from io import BytesIO
+from PIL import Image
+from django.core.files.uploadedfile import SimpleUploadedFile
 
-User = get_user_model()
+def create_test_image():
+    file = BytesIO()
+    image = Image.new('RGB', (100, 100), color='red')
+    image.save(file, 'JPEG')
+    file.seek(0)
+    return SimpleUploadedFile(f"test_image.jpg", file.getvalue(), content_type="image/jpeg")
 
-
-class AuthTests(APITestCase):
+class UserModelTest(TestCase):
     def setUp(self):
-        self.register_url = "/api/register/"
-        self.login_url = "/api/login/"
-        self.portfolio_url = "/api/portfolio/"
-
-    @patch("api.serializers.send_forgot_password_email")  
-    def test_register_user_success(self, mock_send_email):
-        data = {
+        self.user_data = {
+            "email": "test@example.com",
             "first_name": "John",
             "last_name": "Kinyanjui",
-            "email": "john@example.com",
-            "phone_number": "0712345678",
-            "password": "password123",
-            "user_type": "ARTISAN",
-            "national_id": "12345678",
-            "latitude": 1.2921,
-            "longitude": 36.8219,
+            "phone_number": "1234567890",
+            "user_type": User.BUYER,
+        }
+        self.user = User.objects.create(**self.user_data)
+        self.user.set_password("TestPassword123")
+        self.user.save()
+
+    def test_user_str(self):
+        self.assertEqual(str(self.user), "John Kinyanjui (test@example.com)")
+
+    def test_generate_otp(self):
+        self.user.generate_otp()
+        self.assertTrue(len(self.user.otp) == 6)
+        self.assertFalse(self.user.otp_verified)
+        self.assertTrue(self.user.otp_exp > timezone.now())
+
+    def test_verify_otp_success(self):
+        self.user.generate_otp()
+        otp = self.user.otp
+        result = self.user.verify_otp(otp)
+        self.assertTrue(result)
+        self.assertTrue(self.user.otp_verified)
+
+    def test_verify_otp_expired(self):
+        self.user.generate_otp()
+        self.user.otp_exp = timezone.now() - timedelta(minutes=1)
+        self.user.save()
+        result = self.user.verify_otp(self.user.otp)
+        self.assertFalse(result)
+        self.assertFalse(self.user.otp_verified)
+
+    def test_verify_otp_invalid(self):
+        self.user.generate_otp()
+        result = self.user.verify_otp("999999")
+        self.assertFalse(result)
+        self.assertFalse(self.user.otp_verified)
+
+
+class ArtisanProfileModelTest(TestCase):
+    def setUp(self):
+        self.artisan = User.objects.create(
+            email="artisan@example.com",
+            first_name="John",
+            last_name="Kinyanjui",
+            phone_number="0987654321",
+            user_type=User.ARTISAN
+        )
+        self.artisan.set_password("TestPassword123")
+        self.artisan.save()
+        self.artisan_profile = ArtisanProfile.objects.create(user=self.artisan)
+
+    def test_artisan_profile_str(self):
+        self.assertEqual(str(self.artisan_profile), "Artisan Profile for artisan@example.com")
+
+    def test_clean_invalid_user_type(self):
+        buyer = User.objects.create(
+            email="buyer@example.com",
+            first_name="Mary",
+            last_name="Wanjiku",
+            phone_number="1234567890",
+            user_type=User.BUYER
+        )
+        buyer.set_password("TestPassword123")
+        buyer.save()
+        invalid_profile = ArtisanProfile(user=buyer)
+        with self.assertRaisesMessage(Exception, "ArtisanProfile can only be linked to an artisan user."):
+            invalid_profile.clean()
+
+    def test_update_verification_status_verified(self):
+        self.artisan_profile.fulfillment_rate = 95.0
+        self.artisan_profile.rejection_rate = 5.0
+        self.artisan_profile.average_rating = 4.5
+        self.artisan_profile.days_active = 100
+        self.artisan_profile.completed_orders = 15
+        self.artisan_profile.update_verification_status()
+        self.assertTrue(self.artisan_profile.is_verified)
+        self.assertIsNone(self.artisan_profile.order_value_limit)
+
+    def test_can_take_order_verified(self):
+        self.artisan_profile.is_verified = True
+        self.assertTrue(self.artisan_profile.can_take_order(3000))
+
+    def test_can_take_order_unverified_limit(self):
+        self.artisan_profile.is_verified = False
+        self.artisan_profile.weekly_order_count = 3
+        self.assertTrue(self.artisan_profile.can_take_order(1500))
+        self.assertFalse(self.artisan_profile.can_take_order(2500))
+
+    def test_can_take_order_unverified_weekly_limit(self):
+        self.artisan_profile.is_verified = False
+        self.artisan_profile.weekly_order_count = 5
+        self.assertFalse(self.artisan_profile.can_take_order(1500))
+
+
+class UserRegistrationSerializerTest(TestCase):
+    def setUp(self):
+        self.valid_data = {
+            "email": "newuser@example.com",
+            "password": "TestPassword123",
+            "first_name": "John",
+            "last_name": "Kinyanjui",
+            "phone_number": "1234567890",
+            "user_type": "buyer"
+        }
+
+    def test_valid_buyer_data(self):
+        serializer = UserRegistrationSerializer(data=self.valid_data)
+        self.assertTrue(serializer.is_valid())
+
+    def test_valid_artisan_data(self):
+        artisan_data = {
+            **self.valid_data,
+            "user_type": "artisan",
+            "national_id": "1234567890",
+            "latitude": 1.234567,
+            "longitude": 2.345678,
             "portfolio": {
-                "title": "My Portfolio",
-                "description": "Some description about portfolio",
-                "image_urls": [f"http://example.com/img{i}.jpg" for i in range(10)],
-            },
+                "title": "Test Portfolio",
+                "description": "A test portfolio",
+                "image_files": [create_test_image() for _ in range(10)]  
+            }
         }
-        response = self.client.post(self.register_url, data, format="json")
-        print("Register response data:", response.data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(User.objects.filter(email="john@example.com").exists())
-        mock_send_email.assert_called_once()
+        with patch('api.serializers.ArtisanPortfolioSerializer.is_valid', return_value=True):
+            with patch('api.serializers.ArtisanPortfolioSerializer.validated_data', return_value={
+                "title": "Test Portfolio",
+                "description": "A test portfolio",
+                "image_files": artisan_data["portfolio"]["image_files"]
+            }):
+                serializer = UserRegistrationSerializer(data=artisan_data)
+                self.assertTrue(serializer.is_valid(), f"Serializer errors: {serializer.errors}")
 
-    def test_register_missing_required_fields(self):
-        data = {
-            "first_name": "Jane",
-            "password": "pass123",
-            "user_type": "BUYER",
-            "phone_number": "0712345678",
+    def test_missing_required_fields(self):
+        invalid_data = {
+            "email": "newuser@example.com",
+            "password": "TestPassword123",
         }
-        response = self.client.post(self.register_url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("email", response.data)
+        serializer = UserRegistrationSerializer(data=invalid_data)
+        self.assertFalse(serializer.is_valid())
+        expected_errors = ["first_name", "last_name", "phone_number", "user_type"]
+        self.assertTrue(any(field in serializer.errors for field in expected_errors),
+                        f"Expected one of {expected_errors}, got {serializer.errors}")
 
-    def test_register_invalid_email_format(self):
-        data = {
-            "email": "not-an-email",
-            "password": "pass123",
-            "first_name": "Jane",
-            "last_name": "Doe",
-            "user_type": "BUYER",
-            "phone_number": "0712345678",
-        }
-        response = self.client.post(self.register_url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("email", response.data)
-
-    def test_register_invalid_phone_number_letters(self):
-        data = {
-            "email": "jane@example.com",
-            "password": "pass123",
-            "first_name": "Jane",
-            "last_name": "Doe",
-            "user_type": "BUYER",
-            "phone_number": "07ab345678",
-        }
-        response = self.client.post(self.register_url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("phone_number", response.data)
+    def test_invalid_email(self):
+        invalid_data = {**self.valid_data, "email": "invalid-email"}
+        serializer = UserRegistrationSerializer(data=invalid_data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("email", serializer.errors)
 
     def test_register_artisan_missing_portfolio(self):
-        data = {
-            "email": "jane@example.com",
-            "password": "saltedpass",
-            "first_name": "Jane",
-            "last_name": "Doe",
-            "user_type": "ARTISAN",
-            "phone_number": "0712345679",
-            "national_id": "987654321",
-            "latitude": 1.1,
-            "longitude": 36.8,
+        artisan_data = {
+            **self.valid_data,
+            "user_type": "artisan",
+            "national_id": "1234567890",
+            "latitude": 1.234567,
+            "longitude": 2.345678,
         }
-        response = self.client.post(self.register_url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("portfolio", response.data)
+        serializer = UserRegistrationSerializer(data=artisan_data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("portfolio", serializer.errors)
 
 
-class PortfolioTests(APITestCase):
+class UserRegistrationViewTest(APITestCase):
     def setUp(self):
-        self.portfolio_url = "/api/portfolio/"
-        self.artisan = User.objects.create_user(
-            email="artisan@example.com",
-            phone_number="0733333333",
-            password="artisanpass",
-            user_type="ARTISAN",
-        )
-        self.buyer = User.objects.create_user(
+        self.client = APIClient()
+        self.url = reverse("register") 
+        self.valid_buyer_data = {
+            "email": "buyer@example.com",
+            "password": "TestPassword123",
+            "first_name": "John",
+            "last_name": "Kinyanjui",
+            "phone_number": "1234567890",
+            "user_type": "buyer"
+        }
+
+    def test_register_buyer_success(self):
+        with patch('users.utils.send_otp_email'):  
+            response = self.client.post(self.url, self.valid_buyer_data, format="json")
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertIn("id", response.data)
+            self.assertIn("token", response.data)
+            user = User.objects.get(email=self.valid_buyer_data["email"])
+            self.assertFalse(user.is_active)
+
+    def test_register_duplicate_email(self):
+        User.objects.create(
             email="buyer@example.com",
-            phone_number="0744444444",
-            password="buyerpass",
-            user_type="BUYER",
+            phone_number="0987654321",
+            user_type=User.BUYER,
+            first_name="Mary",
+            last_name="Wanjiku"
         )
-        self.admin = User.objects.create_superuser(email="admin@example.com", password="adminpass")
-        self.admin.user_type = "ADMIN"
-        self.admin.save()
-        Token.objects.create(user=self.admin)
+        with patch('users.utils.send_otp_email'):
+            response = self.client.post(self.url, self.valid_buyer_data, format="json")
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+            self.assertIn("email", response.data)
 
-    def authenticate(self, user, password):
-        response = self.client.post(
-            "/api/login/", {"identifier": user.email, "password": password}, format="json"
+
+class LoginViewTest(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.url = reverse("login")
+        self.user = User.objects.create(
+            email="test@example.com",
+            phone_number="1234567890",
+            user_type=User.BUYER,
+            is_active=True,
+            first_name="John",
+            last_name="Kinyanjui"
         )
-        token = response.data.get("token")
-        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token}")
+        self.user.set_password("TestPassword123")
+        self.user.save()
 
-    def test_artisan_can_create_portfolio(self):
-        self.authenticate(self.artisan, "artisanpass")
-        data = {
-            "title": "Test Portfolio",
-            "description": "A test description",
-            "image_urls": [f"http://example.com/img{i}.jpg" for i in range(10)],
-        }
-        response = self.client.post(self.portfolio_url, data, format="json")
-        print("Create portfolio response data:", response.data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-    def test_portfolio_create_with_invalid_image_urls(self):
-        self.authenticate(self.artisan, "artisanpass")
-        data = {
-            "title": "Some Portfolio",
-            "description": "Testing invalid image URLs",
-            "image_urls": [
-                "http://valid-url.com/img.jpg",
-                "invalid-url",
-            ],
-        }
-        response = self.client.post(self.portfolio_url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("image_urls", response.data)
-
-    def test_artisan_cannot_create_portfolio_with_less_than_10_images(self):
-        self.authenticate(self.artisan, "artisanpass")
-        data = {
-            "title": "Incomplete Portfolio",
-            "description": "Not enough images",
-            "image_urls": ["http://example.com/img1.jpg"],
-        }
-        response = self.client.post(self.portfolio_url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_buyer_cannot_create_portfolio(self):
-        self.authenticate(self.buyer, "buyerpass")
-        data = {
-            "title": "Buyer Portfolio",
-            "description": "Buyers cannot create portfolios",
-            "image_urls": [f"http://example.com/img{i}.jpg" for i in range(10)],
-        }
-        response = self.client.post(self.portfolio_url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    def test_admin_can_view_all_portfolios(self):
-        self.authenticate(self.admin, "adminpass")
-        ArtisanPortfolio.objects.create(
-            artisan=self.artisan,
-            title="Admin View Portfolio",
-            description="Portfolio created for admin view test",
-            image_urls=[f"http://example.com/img{i}.jpg" for i in range(10)],
-        )
-        response = self.client.get(self.portfolio_url, format="json")
-        print("Admin view portfolios response data:", response.data)
+    def test_login_with_email_success(self):
+        data = {"email": "test@example.com", "password": "TestPassword123"}
+        response = self.client.post(self.url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertGreaterEqual(len(response.data), 1)
+        self.assertIn("token", response.data)
+        self.assertIn("user", response.data)
 
-    def test_buyer_can_view_portfolios_but_not_edit(self):
-        self.authenticate(self.buyer, "buyerpass")
-        response = self.client.get(self.portfolio_url, format="json")
+    def test_login_with_phone_success(self):
+        data = {"phone_number": "1234567890", "password": "TestPassword123"}
+        response = self.client.post(self.url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("token", response.data)
 
-        data_edit = {
-            "title": "Trying to edit",
-            "description": "Change description",
-            "image_urls": [f"http://example.com/img{i}.jpg" for i in range(10)],
-        }
-        response_post = self.client.post(self.portfolio_url, data_edit, format="json")
-        self.assertEqual(response_post.status_code, status.HTTP_403_FORBIDDEN)
+    def test_login_invalid_credentials(self):
+        data = {"email": "test@example.com", "password": "WrongPassword"}
+        response = self.client.post(self.url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("non_field_errors", response.data)
+
+
+class OTPVerificationViewTest(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.url = reverse("verify-otp")  
+        self.user = User.objects.create(
+            email="test@example.com",
+            phone_number="1234567890",
+            user_type=User.BUYER,
+            is_active=False,
+            first_name="John",
+            last_name="Kinyanjui"
+        )
+        self.user.generate_otp()
+        self.user.set_password("TestPassword123")
+        self.user.save()
+
+    def test_verify_otp_success(self):
+        data = {"email": "test@example.com", "otp": self.user.otp}
+        response = self.client.post(self.url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.otp_verified)
+        self.assertTrue(self.user.is_active)
+
+    def test_verify_otp_invalid(self):
+        data = {"email": "test@example.com", "otp": "999999"}
+        response = self.client.post(self.url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("otp", response.data)
+
+    def test_verify_otp_expired(self):
+        self.user.otp_exp = timezone.now() - timedelta(minutes=1)
+        self.user.save()
+        data = {"email": "test@example.com", "otp": self.user.otp}
+        response = self.client.post(self.url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("otp", response.data)

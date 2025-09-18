@@ -1,72 +1,43 @@
 from django.db import models
-from django.utils import timezone
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
+from django.contrib.auth.models import AbstractUser
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from datetime import timedelta
+from django.utils import timezone
 import random
 
-def generate_otp():
-    return str(random.randint(100000, 999999))
-
-class UserManager(BaseUserManager):
-    def create_user(self, email, password=None, **extra_fields):
-        if not email:
-            raise ValueError("Email is required")
-        user = self.model(email=email, **extra_fields)
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
-
-    def create_superuser(self, email, password=None, **extra_fields):
-        extra_fields.setdefault("is_superuser", True)
-        extra_fields.setdefault("is_staff", True)
-        extra_fields.setdefault("is_active", True)
-        extra_fields.setdefault("user_type", "admin")
-        if extra_fields.get("is_superuser") is not True:
-            raise ValueError("Superuser must have is_superuser=True.")
-        if extra_fields.get("is_staff") is not True:
-            raise ValueError("Superuser must have is_staff=True.")
-        if extra_fields.get("user_type") != "admin":
-            raise ValueError("Superuser must have user_type='admin'.")
-        user = self.model(email=email, **extra_fields)
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
-
-class User(AbstractBaseUser, PermissionsMixin):
-    class UserType(models.TextChoices):
-        ARTISAN = "ARTISAN", "Artisan"
-        BUYER = "BUYER", "Buyer"
-        
-    user_id = models.AutoField(primary_key=True)
-    user_type = models.CharField(max_length=10, choices=UserType.choices, default=UserType.BUYER, blank=True)
-    first_name = models.CharField(max_length=50, blank=True, null=True)
-    last_name = models.CharField(max_length=50, blank=True, null=True)
-    email = models.EmailField(max_length=254, unique=True)
+class User(AbstractUser):
+    ARTISAN = 'artisan'
+    BUYER = 'buyer'
+    USER_TYPE_CHOICES = [
+        (ARTISAN, 'Artisan'),
+        (BUYER, 'Buyer'),
+    ]
+    user_type = models.CharField(
+        max_length=10,
+        choices=USER_TYPE_CHOICES,
+        default=BUYER
+    )
+    email = models.EmailField(unique=True)
     phone_number = models.CharField(max_length=10, unique=True, null=True, blank=True,validators=[RegexValidator(r'^\d{10}$', 'Phone number must be exactly 10 digits.')])
-    national_id = models.CharField(max_length=10, null=True, blank=True,validators=[RegexValidator(r'^\d{10}$', 'National ID must be 8 digits.')])
-    image_url = models.URLField(max_length=255, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
-    last_login = models.DateTimeField(null=True, blank=True)
-    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    national_id = models.CharField(max_length=10, null=True, blank=True,validators=[RegexValidator(r'^\d{8}$', 'National ID must be 8 digits.')])
+    image = models.ImageField(upload_to='profile_images/', default=None)
+    
     otp = models.CharField(max_length=6, null=True, blank=True)
     otp_exp = models.DateTimeField(null=True, blank=True)
     otp_verified = models.BooleanField(default=False)
 
-    objects = UserManager()
+    username = None
 
-    USERNAME_FIELD = "phone_number"
-    REQUIRED_FIELDS = ["email"]
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["first_name", "last_name","phone_number"]
 
     def __str__(self):
         return f"{self.first_name or ''} {self.last_name or ''} ({self.email})".strip()
 
     def generate_otp(self):
-        self.otp = generate_otp()
+        self.otp = str(random.randint(100000, 999999))
         self.otp_exp = timezone.now() + timedelta(minutes=10)
         self.otp_verified = False
         self.save()
@@ -78,11 +49,6 @@ class User(AbstractBaseUser, PermissionsMixin):
             return True
         return False
 
-class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    image_url = models.URLField(max_length=255, blank=True, null=True)
-    def __str__(self):
-        return f"{self.user.email} Profile"
 
 class ArtisanProfile(models.Model):
     user = models.OneToOneField(
@@ -127,19 +93,32 @@ class ArtisanProfile(models.Model):
         if self.is_verified:
             return True
         return order_value <= 2000 and self.weekly_order_count < 5
-        
+
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='profile_images/', default=None)
+    
+    def __str__(self):
+        return f"{self.user.email} Profile"
+
 class ArtisanPortfolio(models.Model):
-    portfolio_id = models.AutoField(primary_key=True)
-    artisan = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'user_type': 'ARTISAN'}, related_name="portfolios")
-    title = models.CharField(max_length=100, blank=True, null=True)
-    description = models.TextField(blank=True, null=True)
+    artisan = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, limit_choices_to={'user_type': 'ARTISAN'})
+    title = models.CharField(max_length=100)
+    description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
-    image_urls = models.JSONField(default=list, blank=True)
 
     def __str__(self):
-        return f"{self.title or 'Untitled'} - {self.artisan.email or self.artisan.phone_number}"
+        return self.title
 
     def clean(self):
         if self.artisan.user_type != "ARTISAN":
             raise ValidationError("Portfolio can only be linked to an artisan user.")
+
+class PortfolioImage(models.Model):
+    portfolio = models.ForeignKey(ArtisanPortfolio, on_delete=models.CASCADE, related_name='images',null=True, blank=True)
+    image = models.ImageField(upload_to='portfolio_images/', default=None)
+
+    def __str__(self):
+        return f"Image for {self.portfolio.title}"
         

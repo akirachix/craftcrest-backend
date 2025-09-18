@@ -5,8 +5,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import NotFound
-from users.models import User, ArtisanPortfolio
-from users.models import Profile
+from users.models import User, ArtisanPortfolio, Profile
 import django_filters.rest_framework
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import serializers
@@ -33,7 +32,6 @@ class UserRegistrationView(generics.CreateAPIView):
         user = serializer.save()
         return user
 
-
 class UserProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = ProfileSerializer
     permission_classes = [IsAuthenticated]
@@ -43,7 +41,6 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
             return Profile.objects.get(user=self.request.user)
         except Profile.DoesNotExist:
             raise NotFound("Profile not found for this user")
-
 
 class LoginView(generics.GenericAPIView):
     serializer_class = LoginSerializer
@@ -92,20 +89,17 @@ class PasswordResetView(generics.GenericAPIView):
         serializer.save()
         return Response({"success": True, "message": "Password reset successfully."}, status=status.HTTP_200_OK)
 
-
 class AdminListUsersView(generics.ListAPIView):
     queryset = User.objects.all()
     serializer_class = CustomUserSerializer
     permission_classes = [IsAuthenticated, AdminPermission]
-    filter_backends = [django_filters.rest_framework.DjangoFilterBackend]
-    filterset_fields = ['user_type'] 
-
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['user_type']
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = CustomUserSerializer
     permission_classes = [IsAuthenticated, AdminPermission]
-
 
 class ArtisanPortfolioViewSet(viewsets.ModelViewSet):
     queryset = ArtisanPortfolio.objects.all()
@@ -125,12 +119,5 @@ class ArtisanPortfolioViewSet(viewsets.ModelViewSet):
         if not user.is_authenticated or user.user_type != 'ARTISAN':
             raise serializers.ValidationError({"detail": "Only artisans can create portfolios."})
         serializer.save(artisan=user)
-
-
-
-
-
-
-
 
         
