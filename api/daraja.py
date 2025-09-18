@@ -16,8 +16,7 @@ class DarajaAPI:
     def get_access_token(self):
         url = f"{self.base_url}/oauth/v1/generate?grant_type=client_credentials"
         response = requests.get(
-            url,
-            auth=HTTPBasicAuth(self.consumer_key, self.consumer_secret),
+            url, auth=HTTPBasicAuth(self.consumer_key, self.consumer_secret),
         )
         response.raise_for_status()
         data = response.json()
@@ -54,19 +53,6 @@ class DarajaAPI:
         response.raise_for_status()
         return response.json()
 
-
-
-    
-
-
-
-
-
-
-
-
-
-
     def b2c_payment(self, artisan_phone, amount, transaction_id, transaction_desc, occassion=""):
         access_token = self.get_access_token()
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
@@ -77,15 +63,15 @@ class DarajaAPI:
             "Content-Type": "application/json",
         }
         payload = {
-            "InitiatorName": settings.DARAJA_INITIATOR_NAME,    
-            "SecurityCredential": settings.DARAJA_SECURITY_CREDENTIAL, 
+            "InitiatorName": settings.DARAJA_INITIATOR_NAME,
+            "SecurityCredential": settings.DARAJA_SECURITY_CREDENTIAL,
             "CommandID": "BusinessPayment",
             "Amount": str(int(amount)),
             "PartyA": self.business_shortcode,
             "PartyB": artisan_phone,
             "Remarks": transaction_desc,
-            "QueueTimeOutURL": settings.DARAJA_B2C_TIMEOUT_URL,  
-            "ResultURL": settings.DARAJA_B2C_RESULT_URL,        
+            "QueueTimeOutURL": settings.DARAJA_B2C_TIMEOUT_URL,
+            "ResultURL": settings.DARAJA_B2C_RESULT_URL,
             "Occasion": occassion,
         }
         url = f"{self.base_url}/mpesa/b2c/v1/paymentrequest"
@@ -93,24 +79,3 @@ class DarajaAPI:
         print("Daraja B2C raw response:", response.text)
         response.raise_for_status()
         return response.json()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    

@@ -7,6 +7,7 @@ from .serializers import (
     PaymentSerializer,
     DeliveryConfirmSerializer,
     RefundSerializer,
+    B2CPaymentSerializer,
 )
 from payments.models import Payment
 from orders.models import Order
@@ -33,18 +34,19 @@ class STKPushView(APIView):
                 )
                 checkout_request_id = response.get('CheckoutRequestID', None)
                 if checkout_request_id:
-                    order = Order.objects.get(id=data['order_id'])
-                    artisan = order.artisan_id
+                    order = data['order_obj']
+                    artisan = data['artisan_obj']
                     Payment.objects.create(
-                        order_id=order,
-                        artisan_id=artisan,
+                        order=order,
+                        artisan=artisan,
                         amount=data['amount'],
                         transaction_code=data['transaction_code'],
-                        buyer_phone=data['buyer_phone'],
-                        artisan_phone=artisan.phone_number,
-                        status='held'
+                        status='held',
+                        paid_at=timezone.now(),
+                        # held_by_platform defaults to True
                     )
-                return Response(response, status=status.HTTP_200_OK)
+                    return Response(response, status=status.HTTP_200_OK)
+                return Response(response, status=status.HTTP_400_BAD_REQUEST)
             except Exception as e:
                 return Response(
                     {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -60,24 +62,19 @@ def daraja_callback(request):
         result_code = stk_callback['ResultCode']
         result_desc = stk_callback['ResultDesc']
         payment = Payment.objects.get(transaction_code=checkout_request_id)
-        payment.result_description = result_desc
         if result_code == 0:
             payment.status = 'held'
             items = stk_callback.get('CallbackMetadata', {}).get('Item', [])
-            item_dict = {item['Name']: item['Value'] for item in items}
-            payment.mpesa_receipt_number = item_dict.get('MpesaReceiptNumber')
-            trans_date_str = str(item_dict.get('TransactionDate'))
-            trans_date = datetime.datetime.strptime(trans_date_str, '%Y%m%d%H%M%S')
-            payment.transaction_date = timezone.make_aware(trans_date, timezone.get_current_timezone())
-            payment.amount = item_dict.get('Amount')
-            payment.buyer_phone = item_dict.get('PhoneNumber')
+            item_dict = {item['Name']: item.get('Value') for item in items}
+            payment.amount = item_dict.get('Amount', payment.amount)
             payment.paid_at = timezone.now()
+            payment.save()
         elif result_code == 1:
             payment.status = 'refunded'
-        payment.save()
+            payment.save()
     except Payment.DoesNotExist:
         pass
-    except Exception as e:
+    except Exception:
         pass
     return Response({"status": "callback processed"})
 
@@ -88,7 +85,7 @@ class DeliveryConfirmView(APIView):
             data = serializer.validated_data
             try:
                 order = Order.objects.get(id=data['order_id'])
-                payment = Payment.objects.get(order_id=order)
+                payment = Payment.objects.get(order=order)
                 if order.delivery_confirmed:
                     return Response({"detail": "Already confirmed."}, status=400)
                 order.delivery_confirmed = True
@@ -96,7 +93,7 @@ class DeliveryConfirmView(APIView):
                 order.save()
                 daraja = DarajaAPI()
                 response = daraja.b2c_payment(
-                    artisan_phone=payment.artisan_phone,
+                    artisan_phone=order.artisan.phone_number,
                     amount=payment.amount,
                     transaction_id=payment.transaction_code,
                     transaction_desc="Delivery confirmed"
@@ -105,9 +102,16 @@ class DeliveryConfirmView(APIView):
                 payment.released_at = timezone.now()
                 payment.held_by_platform = False
                 payment.save()
-                return Response({"detail": "Delivery confirmed and payout released.", "b2c_response": response})
+                return Response(
+                    {
+                        "detail": "Delivery confirmed and payout released.",
+                        "b2c_response": response,
+                    }
+                )
             except Exception as e:
-                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response(
+                    {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class RefundPaymentView(APIView):
@@ -117,11 +121,11 @@ class RefundPaymentView(APIView):
             data = serializer.validated_data
             try:
                 order = Order.objects.get(id=data['order_id'])
-                payment = Payment.objects.get(order_id=order)
+                payment = Payment.objects.get(order=order)
                 payment.status = "refunded"
-                payment.refunded_reason = data['reason']
+                # Add a refund reason field to Payment model if you want to store this
                 payment.held_by_platform = False
-                payment.refund_at = timezone.now()
+                payment.released_at = timezone.now()
                 payment.save()
                 return Response({"detail": "Refund processed."})
             except Exception as e:
@@ -132,14 +136,14 @@ def auto_release_payments():
     now = timezone.now()
     payments = Payment.objects.filter(status="held")
     for payment in payments:
-        order = payment.order_id
-        if order.delivery_confirmed:
+        order = payment.order
+        if hasattr(order, 'delivery_confirmed') and order.delivery_confirmed:
             continue
         if payment.paid_at and (now - payment.paid_at).total_seconds() > 86400:
             daraja = DarajaAPI()
             try:
                 response = daraja.b2c_payment(
-                    artisan_phone=payment.artisan_phone,
+                    artisan_phone=order.artisan.phone_number,
                     amount=payment.amount,
                     transaction_id=payment.transaction_code,
                     transaction_desc="Auto-release after 24hr"
@@ -151,20 +155,21 @@ def auto_release_payments():
             except Exception:
                 continue
 
-
 class B2CPaymentView(APIView):
     def post(self, request):
-        data = request.data
-        daraja = DarajaAPI()
-        try:
-            response = daraja.b2c_payment(
-                artisan_phone=data["artisan_phone"],
-                amount=data["amount"],
-                transaction_id=data["transaction_id"],
-                transaction_desc=data.get("transaction_desc", ""),
-                occassion=data.get("occassion", ""),
-            )
-            return Response(response, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+        serializer = B2CPaymentSerializer(data=request.data)
+        if serializer.is_valid():
+            data = serializer.validated_data
+            daraja = DarajaAPI()
+            try:
+                response = daraja.b2c_payment(
+                    artisan_phone=data["artisan_phone"],
+                    amount=data["amount"],
+                    transaction_id=data["transaction_id"],
+                    transaction_desc=data.get("transaction_desc", ""),
+                    occassion=data.get("occassion", ""),
+                )
+                return Response(response, status=status.HTTP_200_OK)
+            except Exception as e:
+                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
