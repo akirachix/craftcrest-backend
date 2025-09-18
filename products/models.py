@@ -1,5 +1,7 @@
 from django.db import models
 from users.models import User
+from django.conf import settings
+
 class Inventory(models.Model):
     CATEGORY_CHOICES = [
     ('pottery', 'Pottery'),
@@ -11,7 +13,8 @@ class Inventory(models.Model):
     ('jewelry','jewerly'),
    
 ]
-    artisan= models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'user_type': 'artisan'})
+
+    artisan = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     product_name = models.CharField(max_length=100)
     description = models.TextField()
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)

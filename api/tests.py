@@ -1,120 +1,212 @@
-# from django.test import TestCase
-# from django.contrib.auth import get_user_model
 
-# User = get_user_model()
+from django.test import TestCase
+from rest_framework.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.response import Response
+from decimal import Decimal
+from datetime import datetime, timedelta
+from users.models import User, ArtisanPortfolio
+from products.models import Inventory
+from orders.models import (
+    Order, Rating, OrderTracking, CustomDesignRequest
+)
+from api.serializers import (
+    OrderSerializer, RatingSerializer,
+    OrderTrackingSerializer, CustomDesignRequestSerializer
+)
+from api.views import(
+    CustomDesignRequestViewSet, OrderTrackingViewSet,RatingViewSet, OrderViewSet
+)
 
-# from rest_framework.test import APIClient
-# from rest_framework import status
+class OrdersSerializersModelsTestCase(TestCase):
+    def setUp(self):
+        self.buyer = User.objects.create(
+            user_type=User.BUYER,
+            first_name="Dorothy",
+            last_name="Khaenzeli",
+            email="dorothy@example.com",
+            phone_number="0712345678",
+            national_id="1234567890"
+        )
+        self.artisan = User.objects.create(
+            user_type=User.ARTISAN,
+            first_name="Maxwell",
+            last_name="David",
+            email="maxwell@example.com",
+            phone_number="0798765432",
+            national_id="0987654321"
+        )
 
-
-# class ShoppingCartViewSetTest(TestCase):
-#     def setUp(self):
-#         self.client = APIClient()
-#         self.url = '/shoppingcarts/'
-
-#     def create_users_and_carts(self):
-#         self.user1 = User.objects.create_user(username='Jecinta', password='jeci4567JM')
-#         self.user2 = User.objects.create_user(username='Daniella', password='dan6783D@')
-#         from cart.models import ShoppingCart  # Import after User load
-#         self.cart1 = ShoppingCart.objects.create(user=self.user1)
-#         self.cart2 = ShoppingCart.objects.create(user=self.user2)
-#         # Debug info
-#         print(f"user1 type: {type(self.user1)}")
-#         print(f"ShoppingCart.user related_model: {ShoppingCart._meta.get_field('user').related_model}")
-
-#     def test_list_shopping_carts_authenticated(self):
-#         self.create_users_and_carts()
-#         self.client.force_authenticate(user=self.user1)
-#         response = self.client.get(self.url)
-#         self.assertEqual(response.status_code, status.HTTP_200_OK)
-#         self.assertEqual(len(response.data), 1)
-#         self.assertEqual(response.data[0]['user'], self.user1.id)
-
-#     def test_create_shopping_cart_authenticated(self):
-#         self.create_users_and_carts()
-#         self.client.force_authenticate(user=self.user2)
-#         response = self.client.post(self.url, {})
-#         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-#         self.assertEqual(response.data['user'], self.user2.id)
-
-#     def test_create_shopping_cart_unauthenticated(self):
-#         self.create_users_and_carts()
-#         self.client.force_authenticate(user=None)
-#         response = self.client.post(self.url, {})
-#         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-
-# class CartItemViewSetTest(TestCase):
-#     def setUp(self):
-#         self.client = APIClient()
-#         self.url = '/cartitems/'
-
-#     def create_data(self):
-#         self.user1 = User.objects.create_user(username='Jecinta', password='jeci4567JM')
-#         self.user2 = User.objects.create_user(username='Daniella', password='dan6783D@')
-#         from cart.models import ShoppingCart, CartItem
-#         from products.models import Inventory
-#         self.cart1 = ShoppingCart.objects.create(user=self.user1)
-#         self.cart2 = ShoppingCart.objects.create(user=self.user2)
-#         self.inventory1 = Inventory.objects.create(description='Item 1', price=10.0, artisan_id=self.user1)
-#         # Debug info
-#         print(f"user1 type: {type(self.user1)}")
-#         print(f"ShoppingCart.user related_model: {ShoppingCart._meta.get_field('user').related_model}")
-
-#     def test_list_cart_items_authenticated(self):
-#         self.create_data()
-#         from cart.models import CartItem
-#         CartItem.objects.create(cart=self.cart1, inventory=self.inventory1, quantity=1, price_when_added=10.0)
-#         self.client.force_authenticate(user=self.user1)
-#         response = self.client.get(self.url)
-#         self.assertEqual(response.status_code, status.HTTP_200_OK)
-#         self.assertEqual(len(response.data), 1)
-
-#     def test_create_cart_item_owner(self):
-#         self.create_data()
-#         self.client.force_authenticate(user=self.user1)
-#         data = {'cart': self.cart1.id, 'inventory': self.inventory1.id, 'quantity': 2}
-#         response = self.client.post(self.url, data)
-#         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-#         self.assertEqual(response.data['price_when_added'], 10.0)
-
-#     def test_create_cart_item_not_owner_forbidden(self):
-#         self.create_data()
-#         self.client.force_authenticate(user=self.user1)
-#         data = {'cart': self.cart2.id, 'inventory': self.inventory1.id, 'quantity': 2}
-#         response = self.client.post(self.url, data)
-#         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.portfolio = ArtisanPortfolio.objects.create(
+            artisan_id=self.artisan,
+            title="Elegant Jewelry",
+            description="Handcrafted jewelry pieces.",
+            image_urls=["http://example.com/img1.jpg", "http://example.com/img2.jpg"]
+        )
 
 
-# class InventoryViewSetTest(TestCase):
-#     def setUp(self):
-#         self.client = APIClient()
-#         self.url = '/inventories/'
+        self.order = Order.objects.create(
+            buyer_id=self.buyer,
+            artisan_id=self.artisan,
+            order_type='ready-made',
+            status='pending',
+            quantity=1,
+            total_amount=Decimal("100.00"),
+            payment_status='pending'
+        )
 
-#     def create_users(self):
-#         self.artisan_user = User.objects.create_user(username='artisan', password='pass')
-#         self.artisan_user.user_type = 'artisan'
-#         self.artisan_user.save()
-#         self.other_user = User.objects.create_user(username='other', password='pass')
+        self.custom_design_request = CustomDesignRequest.objects.create(
+            buyer_id=self.buyer,
+            artisan_id=self.artisan,
+            description="Sample design",
+            deadline=datetime.now().date() + timedelta(days=5),
+            status='material-sourcing',
+            quote_amount=Decimal("200.00"),
+            material_price=Decimal("50.00"),
+            labour_price=Decimal("50.00")
+        )
 
-#     def test_create_inventory_authenticated_artisan(self):
-#         self.create_users()
-#         self.client.force_authenticate(user=self.artisan_user)
-#         data = {'description': 'New Item', 'price': 20.0}
-#         response = self.client.post(self.url, data)
-#         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-#         self.assertEqual(response.data['artisan_id'], self.artisan_user.id)
+        self.order_tracking = OrderTracking.objects.create(
+            order_id=self.order,
+            artisan_id=self.artisan,
+            status='pending'
+        )
 
-#     def test_create_inventory_unauthenticated(self):
-#         self.create_users()
-#         self.client.force_authenticate(user=None)
-#         data = {'description': 'New Item', 'price': 20.0}
-#         response = self.client.post(self.url, data)
-#         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.rating = Rating.objects.create(
+            order_id=self.order,
+            buyer_id=self.buyer,
+            rating=5
+        )
+ 
+    def test_user_str_representation(self):
+        self.assertEqual(str(self.buyer), "Dorothy Khaenzeli (dorothy@example.com)")
+        self.assertEqual(str(self.artisan), "Maxwell David (maxwell@example.com)")
 
-#     def test_create_inventory_not_artisan(self):
-#         self.create_users()
-#         self.client.force_authenticate(user=self.other_user)
-#         data = {'description': 'New Item', 'price': 20.0}
-#         response = self.client.post(self.url, data)
-#         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+    def test_artisan_portfolio_str_representation(self):
+        self.assertEqual(str(self.portfolio), "Elegant Jewelry")
+        self.assertEqual(self.portfolio.artisan_id.user_type, User.ARTISAN)
+        self.assertIsInstance(self.portfolio.image_urls, list)
+
+    def test_user_email_unique_constraint(self):
+        with self.assertRaises(Exception):
+            User.objects.create(
+                user_type=User.BUYER,
+                first_name="Chebet",
+                last_name="Uzed",
+                email="dorothy@example.com",  
+                phone_number="0799999999",
+                national_id="1111111111"
+            )
+
+    def test_order_serializer_valid_order_type(self):
+        serializer = OrderSerializer(instance=self.order)
+        data = serializer.data
+        self.assertIn(data['order_type'], ['ready-made', 'custom'])
+
+    def test_order_serializer_invalid_order_type(self):
+        data = {
+            "buyer_id": self.buyer.user_id,
+            "artisan_id": self.artisan.user_id,
+            "order_type": 'invalid-type',
+            "status": 'pending',
+            "quantity": 1,
+            "total_amount": "100.00",
+            "payment_status": "pending"
+        }
+        serializer = OrderSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("order_type", serializer.errors)
+
+
+    def test_order_serializer_confirmed_requires_payment_completed(self):
+        data = {
+            "buyer_id": self.buyer.user_id,
+            "artisan_id": self.artisan.user_id,
+            "order_type": 'ready-made',
+            "status": 'confirmed',
+            "quantity": 1,
+            "total_amount": "100.00",
+            "payment_status": "pending"
+        }
+        serializer = OrderSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        errors = serializer.errors
+        self.assertTrue(
+            'non_field_errors' in errors or
+            'status' in errors or
+            any('payment' in str(err).lower() for err in errors.values())
+        )
+
+    def test_rating_serializer_valid_rating(self):
+        serializer = RatingSerializer(instance=self.rating)
+        data = serializer.data
+        self.assertTrue(1 <= data['rating'] <= 5)
+
+    def test_rating_serializer_invalid_rating(self):
+        data = {
+            "order_id": self.order.id,
+            "buyer_id": self.buyer.user_id,
+            "rating": 6,
+            "review_text": ""
+        }
+        serializer = RatingSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("rating", serializer.errors)
+
+    def test_order_tracking_serializer_fields(self):
+        serializer = OrderTrackingSerializer(instance=self.order_tracking)
+        data = serializer.data
+        self.assertIn('created_at', data)
+
+    def test_custom_design_request_serializer_fields(self):
+        serializer = CustomDesignRequestSerializer(instance=self.custom_design_request)
+        data = serializer.data
+        self.assertIn('created_at', data)
+
+
+    def test_confirm_payment_only_buyer_can_confirm(self):
+        self.order.payment_status = 'pending'
+        self.order.status = 'pending'
+        self.order.save()
+        view = OrderViewSet()
+        view.request = type("Request", (), {})()
+        view.request.user = self.buyer
+        view.kwargs = {'pk': self.order.pk}
+        view.get_object = lambda: self.order
+        response = view.confirm_payment(view.request, pk=self.order.pk)
+        self.assertEqual(response.data['payment_status'], 'completed')
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, 'confirmed')
+        self.assertEqual(self.order.payment_status, 'completed')
+
+    def test_custom_design_request_only_buyer_can_create(self):
+        view = CustomDesignRequestViewSet()
+        view.request = type("Request", (), {})()
+        view.request.user = self.artisan
+        serializer = CustomDesignRequestSerializer(instance=self.custom_design_request)
+        with self.assertRaises(PermissionDenied):
+            view.perform_create(serializer)
+
+    def test_accept_custom_design_request_only_artisan_can_accept(self):
+        self.custom_design_request.status = 'pending'
+        self.custom_design_request.artisan_id = self.artisan
+        self.custom_design_request.save()
+        view = CustomDesignRequestViewSet()
+        view.request = type("Request", (), {})()
+        view.request.user = self.buyer
+        view.kwargs = {'pk': self.custom_design_request.pk}
+        view.get_object = lambda: self.custom_design_request
+        with self.assertRaises(PermissionDenied):
+            view.accept_request(view.request, pk=self.custom_design_request.pk)
+
+    def test_accept_custom_design_request_artisan_accepts(self):
+        self.custom_design_request.status = 'pending'
+        self.custom_design_request.artisan_id = self.artisan
+        self.custom_design_request.save()
+        view = CustomDesignRequestViewSet()
+        view.request = type("Request", (), {})()
+        view.request.user = self.artisan
+        view.kwargs = {'pk': self.custom_design_request.pk}
+        view.get_object = lambda: self.custom_design_request
+
