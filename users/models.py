@@ -29,6 +29,7 @@ class ArtisanPortfolio(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     def __str__(self):
         return self.title
+
 class PortfolioImage(models.Model):
     portfolio = models.ForeignKey(ArtisanPortfolio, on_delete=models.CASCADE, related_name='images')
     image = models.ImageField(upload_to='portfolio_images/', default=None)

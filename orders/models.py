@@ -50,18 +50,13 @@ class CustomDesignRequest(models.Model):
     buyer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='custom_requests_as_buyer',
-         null=True, 
-         blank=True,
-         default=1
+        related_name='custom_requests_as_buyer'
+        
     )
     artisan = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='custom_requests_as_artisan',
-         null=True, 
-         blank=True,
-         default=1
+        related_name='custom_requests_as_artisan'
     )
     description = models.TextField()
     reference_images = models.URLField(blank=True, null=True)
@@ -86,8 +81,8 @@ class OrderStatus(models.Model):
     approval_timestamp = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 class Rating(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, default=1)
-    buyer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='ratings_given', default=1)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    buyer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='ratings_given')
     rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     review_text = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
