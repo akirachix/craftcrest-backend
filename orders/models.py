@@ -4,7 +4,6 @@ from users.models import User
 from products.models import Inventory
 from cart.models import ShoppingCart
 from django.conf import settings
-
 class Order(models.Model):
     ORDER_TYPE_CHOICES = [('ready-made', 'Ready-made'), ('custom', 'Custom')]
     STATUS_CHOICES = [
@@ -28,7 +27,18 @@ class Order(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    buyer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='orders_as_buyer',
+        null=True, blank=True
+    )
+    artisan = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='orders_as_artisan',
+        null=True, blank=True
+    )
 class CustomDesignRequest(models.Model):
     STATUS_CHOICES = [
         ('material-sourcing', 'Material-sourcing'),
@@ -56,7 +66,6 @@ class CustomDesignRequest(models.Model):
     material_price = models.DecimalField(max_digits=10, decimal_places=2)
     labour_price = models.DecimalField(max_digits=10, decimal_places=2)
     created_at = models.DateField(auto_now_add=True)
-
 class OrderStatus(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
@@ -71,7 +80,6 @@ class OrderStatus(models.Model):
     buyer_approval = models.BooleanField(default=False)
     approval_timestamp = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
 class Rating(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
     buyer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='ratings_given')

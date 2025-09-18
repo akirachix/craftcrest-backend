@@ -3,7 +3,6 @@ from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
-
 class User(AbstractUser):
     ARTISAN = 'artisan'
     BUYER = 'buyer'
@@ -23,7 +22,6 @@ class User(AbstractUser):
     image = models.ImageField(upload_to='profile_images/', default=None)
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.email})"
-
 class ArtisanPortfolio(models.Model):
     artisan = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, limit_choices_to={'user_type': 'artisan'})
     title = models.CharField(max_length=100)

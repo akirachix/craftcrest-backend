@@ -10,7 +10,28 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+
+import os
 from pathlib import Path
+from dotenv import load_dotenv
+load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent.parent
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+
+
+DARAJA_CONSUMER_KEY = os.getenv("DARAJA_CONSUMER_KEY")
+DARAJA_CONSUMER_SECRET = os.getenv("DARAJA_CONSUMER_SECRET")
+DARAJA_SHORTCODE = os.getenv("DARAJA_SHORTCODE")
+DARAJA_PASSKEY = os.getenv("DARAJA_PASSKEY")
+DARAJA_CALLBACK_URL = os.getenv("DARAJA_CALLBACK_URL")
+
+
+DARAJA_INITIATOR_NAME = os.getenv("DARAJA_INITIATOR_NAME")
+DARAJA_SECURITY_CREDENTIAL = os.getenv("DARAJA_SECURITY_CREDENTIAL")
+DARAJA_B2C_TIMEOUT_URL = os.getenv("DARAJA_B2C_TIMEOUT_URL")
+DARAJA_B2C_RESULT_URL = os.getenv("DARAJA_B2C_RESULT_URL")
+
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,7 +49,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
+AUTH_USER_MODEL= 'users.User'
 # Application definition
 
 INSTALLED_APPS = [
@@ -45,8 +66,6 @@ INSTALLED_APPS = [
     'products',
     'orders',
     'cart',
-    'api',
-    'rest_framework'
 ]
 
 MIDDLEWARE = [
