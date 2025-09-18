@@ -20,7 +20,7 @@ class Inventory(models.Model):
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     stock_quantity = models.IntegerField()
-    image = models.ImageField(upload_to='product_images/', default=None)
+    image = models.ImageField(upload_to='product_images/', blank=True, null=True)
     is_customizable = models.BooleanField(default=False)
     custom_options = models.TextField(blank=True, null=True) 
     created_at = models.DateTimeField(auto_now_add=True)
