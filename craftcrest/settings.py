@@ -9,17 +9,40 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
+DEBUG = True
+ALLOWED_HOSTS = []
+import dj_database_url
+import os
 from pathlib import Path
 import os
 from dotenv import load_dotenv
 from datetime import timedelta
 from decouple import config
+load_dotenv()  
+SECRET_KEY = os.getenv('SECRET_KEY')
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+LOCATIONIQ_API_KEY = os.getenv('LOCATIONIQ_API_KEY')
+
+from dotenv import load_dotenv
+load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent.parent
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+
+
+DARAJA_CONSUMER_KEY = os.getenv("DARAJA_CONSUMER_KEY")
+DARAJA_CONSUMER_SECRET = os.getenv("DARAJA_CONSUMER_SECRET")
+DARAJA_SHORTCODE = os.getenv("DARAJA_SHORTCODE")
+DARAJA_PASSKEY = os.getenv("DARAJA_PASSKEY")
+DARAJA_CALLBACK_URL = os.getenv("DARAJA_CALLBACK_URL")
+DARAJA_INITIATOR_NAME = os.getenv("DARAJA_INITIATOR_NAME")
+DARAJA_SECURITY_CREDENTIAL = os.getenv("DARAJA_SECURITY_CREDENTIAL")
+DARAJA_B2C_TIMEOUT_URL = os.getenv("DARAJA_B2C_TIMEOUT_URL")
+DARAJA_B2C_RESULT_URL = os.getenv("DARAJA_B2C_RESULT_URL")
+
+
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load environment variables from .env file at project root
 load_dotenv(dotenv_path=BASE_DIR / '.env')
 
 
@@ -33,9 +56,9 @@ MEDIA_ROOT = BASE_DIR / 'media'
 SECRET_KEY = config('SECRET_KEY', default='craftcrestapp@2025')
 
 
-DEBUG = config('DEBUG', default=False, cast=bool)
+DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+# ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1:8000/').split(',')
 
 
 
@@ -51,10 +74,13 @@ INSTALLED_APPS = [
     'django_filters',
     'corsheaders',
     'users.apps.UsersConfig',
+    'api',
     'payments',
     'products',
     'orders',
     'cart',
+    'drf_spectacular',
+    'drf_spectacular_sidecar',
 ]
 
 MIDDLEWARE = [
@@ -141,6 +167,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',
@@ -149,7 +176,6 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': []
 }
 
-# Email settings read from environment variables
 
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND')
 EMAIL_HOST = os.getenv('EMAIL_HOST')
@@ -175,5 +201,15 @@ CORS_ALLOW_HEADERS = [
 LOGIN_REDIRECT_URL = '/admin/'
 LOGOUT_REDIRECT_URL = '/'
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-MEDIA_URL = '/media/'
+
+LOCATIONIQ_API_KEY = os.getenv('LOCATIONIQ_API_KEY')
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'CraftCrest API',
+    'DESCRIPTION': 'CraftCrest is a online marketplace that enables skilled artisans to showcase their craftsmanship.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'SWAGGER_UI_DIST': 'SIDECAR',
+    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
+    'REDOC_DIST': 'SIDECAR',
+}

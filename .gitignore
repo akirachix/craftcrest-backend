@@ -10,4 +10,4 @@ db.sqlite3
 .history/
 .lh/
 staticfiles/
-media/
+media/get-pip.py
