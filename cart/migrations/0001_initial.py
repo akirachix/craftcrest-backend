@@ -1,6 +1,7 @@
 
 
 
+
 from django.db import migrations, models
 
 
@@ -19,6 +20,7 @@ class Migration(migrations.Migration):
                 ('quantity', models.PositiveIntegerField()),
                 ('total_price', models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True)),
                 ('inventory', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='products.inventory')),
+
             ],
         ),
         migrations.CreateModel(

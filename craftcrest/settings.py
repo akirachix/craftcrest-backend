@@ -13,6 +13,13 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+load_dotenv()  
+SECRET_KEY = os.getenv('SECRET_KEY')
+
+LOCATIONIQ_API_KEY = os.getenv('LOCATIONIQ_API_KEY')
+
 from dotenv import load_dotenv
 load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -49,7 +56,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-AUTH_USER_MODEL= 'users.User'
 # Application definition
 
 INSTALLED_APPS = [
@@ -60,8 +66,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'api',
+
     'users',
+    'api',
     'payments',
     'products',
     'orders',
@@ -149,3 +156,6 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+LOCATIONIQ_API_KEY = os.getenv('LOCATIONIQ_API_KEY')
