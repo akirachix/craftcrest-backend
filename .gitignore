@@ -11,3 +11,5 @@ db.sqlite3
 .lh/
 staticfiles/
 media/
+.media/get-pip.py
+.media/portfolio_images/

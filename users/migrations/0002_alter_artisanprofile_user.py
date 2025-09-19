@@ -8,16 +8,15 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("cart", "0001_initial"),
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        ("users", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name="shoppingcart",
+            model_name="artisanprofile",
             name="user",
             field=models.OneToOneField(
-                limit_choices_to={"user_type": "buyer"},
+                limit_choices_to={"user_type": "ARTISAN"},
                 on_delete=django.db.models.deletion.CASCADE,
                 to=settings.AUTH_USER_MODEL,
             ),
