@@ -29,7 +29,6 @@ from orders.models import Order, Rating, OrderStatus, CustomDesignRequest
 class ShoppingCartViewSet(viewsets.ModelViewSet):
     queryset = ShoppingCart.objects.all()
     serializer_class = ShoppingCartSerializer
-    # permission_classes = [IsAuthenticated]
 
 class ItemViewSet(viewsets.ModelViewSet):
     queryset = Item.objects.all()
