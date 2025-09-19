@@ -10,5 +10,6 @@ db.sqlite3
 .history/
 .lh/
 staticfiles/
-media/get-pip.py
-media/portfolio_images/
+.media/
+.media/get-pip.py
+.media/portfolio_images/
