@@ -1,50 +1,59 @@
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, viewsets
 from .utils import haversine
-from users.models import User
+from users.models import User, ArtisanPortfolio, ArtisanProfile
 from api.serializers import UserSerializer, NearbyArtisanSearchSerializer
-from users.models import ArtisanPortfolio
+import logging
 
+logger = logging.getLogger(__name__)
 
 class NearbyArtisansView(APIView):
-    
     def post(self, request):
         serializer = NearbyArtisanSearchSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        lat = serializer.validated_data['latitude']
-        lon = serializer.validated_data['longitude']
+        lat = float(serializer.validated_data['latitude'])  
+        lon = float(serializer.validated_data['longitude'])
         radius = float(serializer.validated_data.get('radius', 50))
 
         artisans = User.objects.filter(
             user_type='artisan',
-            latitude__isnull=False,
-            longitude__isnull=False,
-        )
+            artisanprofile__latitude__isnull=False,
+            artisanprofile__longitude__isnull=False,
+        ).select_related('artisanprofile')
+
         results = []
         for artisan in artisans:
-            dist = haversine(lat, lon, artisan.latitude, artisan.longitude)
-            if dist <= radius:
-                portfolios = ArtisanPortfolio.objects.filter(artisan_id=artisan.user_id)
-                portfolio_data = [
-                    {
-                        "title": p.title,
-                        "description": p.description,
-                        "image_urls": p.image_urls
-                    } for p in portfolios
-                ]
-                results.append({
-                    "artisan_id": artisan.user_id,
-                    "first_name": artisan.first_name,
-                    "last_name": artisan.last_name,
-                    "distance_km": round(dist, 2),
-                    "latitude": artisan.latitude,
-                    "longitude": artisan.longitude,
-                    "portfolio": portfolio_data,
-                })
+            try:
+                artisan_profile = artisan.artisanprofile
+                if artisan_profile.latitude is None or artisan_profile.longitude is None:
+                    continue
+                dist = haversine(lat, lon, float(artisan_profile.latitude), float(artisan_profile.longitude))
+                if dist <= radius:
+                    portfolios = ArtisanPortfolio.objects.filter(artisan_id=artisan.id)
+                    portfolio_data = [
+                        {
+                            "title": p.title,
+                            "description": p.description,
+                            "images": p.image_urls
+                        }
+                        for p in portfolios
+                    ]
+                    results.append({
+                        "id": artisan.id,
+                        "first_name": artisan.first_name,
+                        "last_name": artisan.last_name,
+                        "distance_km": round(dist, 2),
+                        "latitude": artisan_profile.latitude,
+                        "longitude": artisan_profile.longitude,
+                        "portfolio": portfolio_data,
+                    })
+            except ArtisanProfile.DoesNotExist:
+                logger.warning(f"Artisan {artisan.email} has no ArtisanProfile")
+                continue
 
         results = sorted(results, key=lambda x: x['distance_km'])
+        logger.info(f"Returning {len(results)} artisans within radius")
         return Response({"artisans": results})
 
 
