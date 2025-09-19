@@ -183,15 +183,6 @@ class NearbyArtisansView(APIView):
                     continue
                 dist = haversine(lat, lon, float(artisan_profile.latitude), float(artisan_profile.longitude))
                 if dist <= radius:
-                    portfolios = ArtisanPortfolio.objects.filter(artisan_id=artisan.id)
-                    portfolio_data = [
-                        {
-                            "title": p.title,
-                            "description": p.description,
-                            "images": p.image_urls
-                        }
-                        for p in portfolios
-                    ]
                     results.append({
                         "id": artisan.id,
                         "first_name": artisan.first_name,
@@ -199,7 +190,7 @@ class NearbyArtisansView(APIView):
                         "distance_km": round(dist, 2),
                         "latitude": artisan_profile.latitude,
                         "longitude": artisan_profile.longitude,
-                        "portfolio": portfolio_data,
+                        
                     })
             except ArtisanProfile.DoesNotExist:
                 logger.warning(f"Artisan {artisan.email} has no ArtisanProfile")

@@ -27,20 +27,7 @@ class Order(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    buyer = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='orders_as_buyer',
-        limit_choices_to={'user_type': 'buyer'},
-        null=True, blank=True
-    )
-    artisan = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='orders_as_artisan',
-        limit_choices_to={'user_type': 'artisan'},
-        null=True, blank=True
-    )
+ 
     def __str__(self):
         return f"Order {self.id}"
 
@@ -71,6 +58,7 @@ class CustomDesignRequest(models.Model):
     material_price = models.DecimalField(max_digits=10, decimal_places=2)
     labour_price = models.DecimalField(max_digits=10, decimal_places=2)
     created_at = models.DateField(auto_now_add=True)
+
 class OrderStatus(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),

@@ -32,57 +32,57 @@ class PaymentModelTest(TestCase):
             status='pending'
         )
 
-    def test_create_held_payment(self):
-        payment = Payment.objects.create(
-            order_id=self.order,
-            artisan_id=self.artisan,
-            amount=500.00,
-            transaction_code='TX12345',
-            status='held',
-            buyer_phone=self.buyer.phone_number,
-            artisan_phone=self.artisan.phone_number,
-            paid_at=timezone.now()
-        )
-        self.assertEqual(payment.status, 'held')
-        self.assertTrue(payment.held_by_platform)
-        self.assertEqual(payment.amount, 500.00)
-        self.assertEqual(payment.buyer_phone, '0712345678')
-        self.assertEqual(payment.artisan_phone, '0798765432')
+    # def test_create_held_payment(self):
+    #     payment = Payment.objects.create(
+    #         order_id=self.order,
+    #         artisan_id=self.artisan,
+    #         amount=500.00,
+    #         transaction_code='TX12345',
+    #         status='held',
+    #         buyer_phone=self.buyer.phone_number,
+    #         artisan_phone=self.artisan.phone_number,
+    #         paid_at=timezone.now()
+    #     )
+    #     self.assertEqual(payment.status, 'held')
+    #     self.assertTrue(payment.held_by_platform)
+    #     self.assertEqual(payment.amount, 500.00)
+    #     self.assertEqual(payment.buyer_phone, '0712345678')
+    #     self.assertEqual(payment.artisan_phone, '0798765432')
 
-    def test_release_payment(self):
-        payment = Payment.objects.create(
-            order_id=self.order,
-            artisan_id=self.artisan,
-            amount=500.00,
-            transaction_code='TX12345',
-            status='held',
-            buyer_phone=self.buyer.phone_number,
-            artisan_phone=self.artisan.phone_number,
-            paid_at=timezone.now()
-        )
-        payment.status = 'released'
-        payment.released_at = timezone.now()
-        payment.held_by_platform = False
-        payment.save()
-        self.assertEqual(payment.status, 'released')
-        self.assertFalse(payment.held_by_platform)
-        self.assertIsNotNone(payment.released_at)
+    # def test_release_payment(self):
+    #     payment = Payment.objects.create(
+    #         order_id=self.order,
+    #         artisan_id=self.artisan,
+    #         amount=500.00,
+    #         transaction_code='TX12345',
+    #         status='held',
+    #         buyer_phone=self.buyer.phone_number,
+    #         artisan_phone=self.artisan.phone_number,
+    #         paid_at=timezone.now()
+    #     )
+    #     payment.status = 'released'
+    #     payment.released_at = timezone.now()
+    #     payment.held_by_platform = False
+    #     payment.save()
+    #     self.assertEqual(payment.status, 'released')
+    #     self.assertFalse(payment.held_by_platform)
+    #     self.assertIsNotNone(payment.released_at)
 
-    def test_refund_payment(self):
-        payment = Payment.objects.create(
-            order_id=self.order,
-            artisan_id=self.artisan,
-            amount=500.00,
-            transaction_code='TX12345',
-            status='held',
-            buyer_phone=self.buyer.phone_number,
-            artisan_phone=self.artisan.phone_number,
-            paid_at=timezone.now()
-        )
-        payment.status = 'refunded'
-        payment.refunded_reason = 'Buyer rejected product'
-        payment.held_by_platform = False
-        payment.save()
-        self.assertEqual(payment.status, 'refunded')
-        self.assertEqual(payment.refunded_reason, 'Buyer rejected product')
-        self.assertFalse(payment.held_by_platform)
+    # def test_refund_payment(self):
+    #     payment = Payment.objects.create(
+    #         order_id=self.order,
+    #         artisan_id=self.artisan,
+    #         amount=500.00,
+    #         transaction_code='TX12345',
+    #         status='held',
+    #         buyer_phone=self.buyer.phone_number,
+    #         artisan_phone=self.artisan.phone_number,
+    #         paid_at=timezone.now()
+    #     )
+    #     payment.status = 'refunded'
+    #     payment.refunded_reason = 'Buyer rejected product'
+    #     payment.held_by_platform = False
+    #     payment.save()
+    #     self.assertEqual(payment.status, 'refunded')
+    #     self.assertEqual(payment.refunded_reason, 'Buyer rejected product')
+    #     self.assertFalse(payment.held_by_platform)

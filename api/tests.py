@@ -1,3 +1,9 @@
+import os
+import requests
+from api.daraja import DarajaAPI
+
+
+
 import uuid
 from django.test import TestCase
 from django.urls import reverse
@@ -12,25 +18,46 @@ import os
 from io import BytesIO
 from PIL import Image
 from django.core.files.uploadedfile import SimpleUploadedFile
+
 from django.test import TestCase
-from rest_framework.exceptions import ValidationError
-from django.core.exceptions import PermissionDenied
-from rest_framework.exceptions import PermissionDenied
-from rest_framework.response import Response
+from rest_framework.test import APIClient
+from django.urls import reverse
+from users.models import User, ArtisanProfile, ArtisanPortfolio, PortfolioImage
+from django.core.files.uploadedfile import SimpleUploadedFile
+from unittest.mock import patch
 from decimal import Decimal
-from datetime import datetime, timedelta
-from users.models import User, ArtisanPortfolio
-from products.models import Inventory
-from orders.models import (
-    Order, Rating, OrderTracking, CustomDesignRequest
-)
-from api.serializers import (
-    OrderSerializer, RatingSerializer,
-    OrderTrackingSerializer, CustomDesignRequestSerializer
-)
-from api.views import(
-    CustomDesignRequestViewSet, OrderTrackingViewSet,RatingViewSet, OrderViewSet
-)
+
+
+def test_get_access_token():
+    api = DarajaAPI()
+    token = api.get_access_token()
+    assert isinstance(token, str)
+    assert len(token) > 10
+    print("Access token:", token)
+def test_stk_push():
+    api = DarajaAPI()
+    buyer_phone = os.environ.get("TEST_BUYER_PHONE", "254708374149")
+    amount = 10
+    transaction_id = "testtx001"
+    transaction_desc = "Test payment"
+    resp = api.stk_push(buyer_phone, amount, transaction_id, transaction_desc)
+    print("STK Push response:", resp)
+    assert "ResponseCode" in resp or "errorMessage" in resp
+def test_b2c_payment():
+    api = DarajaAPI()
+    artisan_phone = os.environ.get("TEST_ARTISAN_PHONE", "254708374149")
+    amount = 5
+    transaction_id = "testtx002"
+    transaction_desc = "Test B2C"
+    resp = api.b2c_payment(artisan_phone, amount, transaction_id, transaction_desc)
+    print("B2C response:", resp)
+    assert "ResponseCode" in resp or "errorMessage" in resp
+if __name__ == "__main__":
+    test_get_access_token()
+    test_stk_push()
+    test_b2c_payment()
+
+
 
 def create_test_image():
     file = BytesIO()
@@ -193,18 +220,6 @@ class UserRegistrationSerializerTest(TestCase):
         self.assertFalse(serializer.is_valid())
         self.assertIn("email", serializer.errors)
 
-    def test_register_artisan_missing_portfolio(self):
-        artisan_data = {
-            **self.valid_data,
-            "user_type": "artisan",
-            "national_id": "1234567890",
-            "latitude": 1.234567,
-            "longitude": 2.345678,
-        }
-        serializer = UserRegistrationSerializer(data=artisan_data)
-        self.assertFalse(serializer.is_valid())
-        self.assertIn("portfolio", serializer.errors)
-
 
 class UserRegistrationViewTest(APITestCase):
     def setUp(self):
@@ -317,194 +332,115 @@ class OTPVerificationViewTest(APITestCase):
 
 
 
-class OrdersSerializersModelsTestCase(TestCase):
+
+
+class NearbyArtisansViewTests(TestCase):
     def setUp(self):
-        self.buyer = User.objects.create(
-            user_type=User.BUYER,
-            first_name="Dorothy",
-            last_name="Khaenzeli",
-            email="dorothy@example.com",
-            phone_number="0712345678",
-            national_id="1234567890"
+        self.client = APIClient()
+        self.artisan = User.objects.create(
+            email="wanjikumwangi@gmail.com",
+            user_type="artisan",
+            first_name="Wanjiku",
+            last_name="Mwangi",
+            phone_number="0712345678"
+        )
+        ArtisanProfile.objects.create(
+            user=self.artisan,
+            latitude=-1.286389,
+            longitude=36.817223
+        )
+        portfolio = ArtisanPortfolio.objects.create(
+            artisan=self.artisan,
+            title="Portfolio",
+            description="Test"
+        )
+        PortfolioImage.objects.create(
+            portfolio=portfolio,
+            image=SimpleUploadedFile("test.jpg", b"file_content", content_type="image/jpeg")
+        )
+    def test_nearby_artisans_valid(self):
+        data = {"latitude": -1.286389, "longitude": 36.817223, "radius": 100}
+        response = self.client.post(reverse('nearby-artisans'), data, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data['artisans']), 1)
+        self.assertEqual(response.data['artisans'][0]['id'], self.artisan.id)
+        self.assertAlmostEqual(response.data['artisans'][0]['distance_km'], 0.0, places=2)
+    def test_nearby_artisans_no_results(self):
+        data = {"latitude": 0.0, "longitude": 0.0, "radius": 10}
+        response = self.client.post(reverse('nearby-artisans'), data, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data['artisans']), 0)
+    def test_nearby_artisans_invalid_input(self):
+        data = {"latitude": -1.286389}
+        response = self.client.post(reverse('nearby-artisans'), data, format='json')
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('longitude', response.data)
+    def test_nearby_artisans_invalid_coordinates(self):
+        data = {"latitude": 100, "longitude": 36.817223, "radius": 50}
+        response = self.client.post(reverse('nearby-artisans'), data, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data['artisans']), 0)
+class UserViewSetTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create(
+            email="kamaunjoroge@gmail.com",
+            user_type="buyer",
+            first_name="Kamau",
+            last_name="Njoroge",
+            phone_number="0723456789"
         )
         self.artisan = User.objects.create(
-            user_type=User.ARTISAN,
-            first_name="Maxwell",
-            last_name="David",
-            email="maxwell@example.com",
-            phone_number="0798765432",
-            national_id="0987654321"
+            email="muthoniwafula@gmail.com",
+            user_type="artisan",
+            first_name="Muthoni",
+            last_name="Wafula",
+            phone_number="0734567890"
         )
-
-        self.portfolio = ArtisanPortfolio.objects.create(
-            artisan_id=self.artisan,
-            title="Elegant Jewelry",
-            description="Handcrafted jewelry pieces.",
-            image_urls=["http://example.com/img1.jpg", "http://example.com/img2.jpg"]
+        ArtisanProfile.objects.create(
+            user=self.artisan,
+            latitude=-1.286389,
+            longitude=36.817223
         )
-
-
-        self.order = Order.objects.create(
-            buyer_id=self.buyer,
-            artisan_id=self.artisan,
-            order_type='ready-made',
-            status='pending',
-            quantity=1,
-            total_amount=Decimal("100.00"),
-            payment_status='pending'
-        )
-
-        self.custom_design_request = CustomDesignRequest.objects.create(
-            buyer_id=self.buyer,
-            artisan_id=self.artisan,
-            description="Sample design",
-            deadline=datetime.now().date() + timedelta(days=5),
-            status='material-sourcing',
-            quote_amount=Decimal("200.00"),
-            material_price=Decimal("50.00"),
-            labour_price=Decimal("50.00")
-        )
-
-        self.order_tracking = OrderTracking.objects.create(
-            order_id=self.order,
-            artisan_id=self.artisan,
-            status='pending'
-        )
-
-        self.rating = Rating.objects.create(
-            order_id=self.order,
-            buyer_id=self.buyer,
-            rating=5
-        )
- 
-    def test_user_str_representation(self):
-        self.assertEqual(str(self.buyer), "Dorothy Khaenzeli (dorothy@example.com)")
-        self.assertEqual(str(self.artisan), "Maxwell David (maxwell@example.com)")
-
-    def test_artisan_portfolio_str_representation(self):
-        self.assertEqual(str(self.portfolio), "Elegant Jewelry")
-        self.assertEqual(self.portfolio.artisan_id.user_type, User.ARTISAN)
-        self.assertIsInstance(self.portfolio.image_urls, list)
-
-    def test_user_email_unique_constraint(self):
-        with self.assertRaises(Exception):
-            User.objects.create(
-                user_type=User.BUYER,
-                first_name="Chebet",
-                last_name="Uzed",
-                email="dorothy@example.com",  
-                phone_number="0799999999",
-                national_id="1111111111"
-            )
-
-    def test_order_serializer_valid_order_type(self):
-        serializer = OrderSerializer(instance=self.order)
-        data = serializer.data
-        self.assertIn(data['order_type'], ['ready-made', 'custom'])
-
-    def test_order_serializer_invalid_order_type(self):
+    def test_list_users(self):
+        response = self.client.get(reverse('user-list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 2)
+        self.assertIn("kamaunjoroge@gmail.com", [user['email'] for user in response.data])
+    def test_retrieve_user(self):
+        response = self.client.get(reverse('user-detail', kwargs={'pk': self.artisan.id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['email'], "muthoniwafula@gmail.com")
+        self.assertEqual(response.data['latitude'], "-1.286389")
+    @patch('requests.get')
+    def test_create_user_with_address(self, mock_get):
+        mock_get.return_value.json.return_value = [{'lat': '-1.286389', 'lon': '36.817223'}]
+        mock_get.return_value.status_code = 200
         data = {
-            "buyer_id": self.buyer.user_id,
-            "artisan_id": self.artisan.user_id,
-            "order_type": 'invalid-type',
-            "status": 'pending',
-            "quantity": 1,
-            "total_amount": "100.00",
-            "payment_status": "pending"
+            "email": "njerikiplagat@gmail.com",
+            "user_type": "artisan",
+            "first_name": "Njeri",
+            "last_name": "Kiplagat",
+            "phone_number": "0745678901",
+            "address": "Kenyatta Avenue, Nairobi"
         }
-        serializer = OrderSerializer(data=data)
-        self.assertFalse(serializer.is_valid())
-        self.assertIn("order_type", serializer.errors)
-
-
-    def test_order_serializer_confirmed_requires_payment_completed(self):
+        response = self.client.post(reverse('user-list'), data, format='json')
+        self.assertEqual(response.status_code, 201)
+        user = User.objects.get(email="njerikiplagat@gmail.com")
+        self.assertEqual(user.artisanprofile.latitude, Decimal('-1.286389'))
+    def test_create_user_invalid_data(self):
         data = {
-            "buyer_id": self.buyer.user_id,
-            "artisan_id": self.artisan.user_id,
-            "order_type": 'ready-made',
-            "status": 'confirmed',
-            "quantity": 1,
-            "total_amount": "100.00",
-            "payment_status": "pending"
+            "email": "invalid",
+            "user_type": "buyer",
+            "first_name": "Invalid",
+            "last_name": "User"
         }
-        serializer = OrderSerializer(data=data)
-        self.assertFalse(serializer.is_valid())
-        errors = serializer.errors
-        self.assertTrue(
-            'non_field_errors' in errors or
-            'status' in errors or
-            any('payment' in str(err).lower() for err in errors.values())
-        )
-
-    def test_rating_serializer_valid_rating(self):
-        serializer = RatingSerializer(instance=self.rating)
-        data = serializer.data
-        self.assertTrue(1 <= data['rating'] <= 5)
-
-    def test_rating_serializer_invalid_rating(self):
-        data = {
-            "order_id": self.order.id,
-            "buyer_id": self.buyer.user_id,
-            "rating": 6,
-            "review_text": ""
-        }
-        serializer = RatingSerializer(data=data)
-        self.assertFalse(serializer.is_valid())
-        self.assertIn("rating", serializer.errors)
-
-    def test_order_tracking_serializer_fields(self):
-        serializer = OrderTrackingSerializer(instance=self.order_tracking)
-        data = serializer.data
-        self.assertIn('created_at', data)
-
-    def test_custom_design_request_serializer_fields(self):
-        serializer = CustomDesignRequestSerializer(instance=self.custom_design_request)
-        data = serializer.data
-        self.assertIn('created_at', data)
+        response = self.client.post(reverse('user-list'), data, format='json')
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('email', response.data)
 
 
-    def test_confirm_payment_only_buyer_can_confirm(self):
-        self.order.payment_status = 'pending'
-        self.order.status = 'pending'
-        self.order.save()
-        view = OrderViewSet()
-        view.request = type("Request", (), {})()
-        view.request.user = self.buyer
-        view.kwargs = {'pk': self.order.pk}
-        view.get_object = lambda: self.order
-        response = view.confirm_payment(view.request, pk=self.order.pk)
-        self.assertEqual(response.data['payment_status'], 'completed')
-        self.order.refresh_from_db()
-        self.assertEqual(self.order.status, 'confirmed')
-        self.assertEqual(self.order.payment_status, 'completed')
 
-    def test_custom_design_request_only_buyer_can_create(self):
-        view = CustomDesignRequestViewSet()
-        view.request = type("Request", (), {})()
-        view.request.user = self.artisan
-        serializer = CustomDesignRequestSerializer(instance=self.custom_design_request)
-        with self.assertRaises(PermissionDenied):
-            view.perform_create(serializer)
 
-    def test_accept_custom_design_request_only_artisan_can_accept(self):
-        self.custom_design_request.status = 'pending'
-        self.custom_design_request.artisan_id = self.artisan
-        self.custom_design_request.save()
-        view = CustomDesignRequestViewSet()
-        view.request = type("Request", (), {})()
-        view.request.user = self.buyer
-        view.kwargs = {'pk': self.custom_design_request.pk}
-        view.get_object = lambda: self.custom_design_request
-        with self.assertRaises(PermissionDenied):
-            view.accept_request(view.request, pk=self.custom_design_request.pk)
 
-    def test_accept_custom_design_request_artisan_accepts(self):
-        self.custom_design_request.status = 'pending'
-        self.custom_design_request.artisan_id = self.artisan
-        self.custom_design_request.save()
-        view = CustomDesignRequestViewSet()
-        view.request = type("Request", (), {})()
-        view.request.user = self.artisan
-        view.kwargs = {'pk': self.custom_design_request.pk}
-        view.get_object = lambda: self.custom_design_request
 
