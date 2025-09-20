@@ -29,5 +29,5 @@ jobs:
         uses: akhileshns/heroku-deploy@v3.13.15
         with:
           heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-          heroku_app_name: "craftcrest"
+          heroku_app_name: "craft-crest"
           heroku_email: ${{ secrets.HEROKU_EMAIL }}
