@@ -23,6 +23,8 @@ packaging==25.0
 pathspec==0.12.1
 pillow==11.3.0
 platformdirs==4.4.0
+psycopg==3.2.10
+psycopg2-binary==2.9.10
 python-decouple==3.8
 python-dotenv==1.1.1
 pytokens==0.1.10
