@@ -65,7 +65,7 @@ class OrderStatus(models.Model):
         ('in-progress', 'In-progress'),
         ('completed', 'Completed')
     ]
-    order = models.ForeignKey(Order, on_delete=models.CASCADE,null=True, blank=True)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
     artisan = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     description = models.TextField(blank=True, null=True)
@@ -74,7 +74,7 @@ class OrderStatus(models.Model):
     approval_timestamp = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 class Rating(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE,null=True, blank=True)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
     buyer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='ratings_given')
     rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     review_text = models.TextField(blank=True, null=True)
