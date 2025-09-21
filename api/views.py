@@ -22,16 +22,11 @@ from .serializers import (
 from users.permissions import AdminPermission, ArtisanPermission
 
 from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status, viewsets
 from .utils import haversine
 from users.models import User, ArtisanPortfolio, ArtisanProfile
 from api.serializers import UserSerializer, NearbyArtisanSearchSerializer
 import logging
 
-from rest_framework import viewsets, status
-from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from .serializers import (
     STKPushSerializer,
@@ -210,12 +205,12 @@ class UserViewSet(viewsets.ModelViewSet):
 class ShoppingCartViewSet(viewsets.ModelViewSet):
     queryset = ShoppingCart.objects.all()
     serializer_class = ShoppingCartSerializer
-    permission_classes = [IsAuthenticated]
+    
 
 class ItemViewSet(viewsets.ModelViewSet):
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
-    permission_classes = [IsAuthenticated]
+    
 
     
 class InventoryViewSet(viewsets.ModelViewSet):
