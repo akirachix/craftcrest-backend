@@ -217,6 +217,7 @@ class ItemViewSet(viewsets.ModelViewSet):
 class InventoryViewSet(viewsets.ModelViewSet):
     queryset = Inventory.objects.all()
     serializer_class = InventorySerializer
+    
    
     def get_queryset(self):
 
@@ -224,6 +225,7 @@ class InventoryViewSet(viewsets.ModelViewSet):
         if artisan_id:
             return self.queryset.filter(artisan_id=artisan_id)
         return self.queryset
+    
 
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
@@ -235,7 +237,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             return Order.objects.filter(buyer_id=user)
         elif hasattr(user, 'artisan_orders'):
             return Order.objects.filter(artisan_id=user)
-        return Order.objects.none()
+        return Order.objects
 
     def confirm_payment(self, request, pk=None):
         order = self.get_object()
@@ -267,7 +269,7 @@ class CustomDesignRequestViewSet(viewsets.ModelViewSet):
             return CustomDesignRequest.objects.filter(buyer_id=user)
         elif hasattr(user, 'artisan_requests'):
             return CustomDesignRequest.objects.filter(artisan_id=user)
-        return CustomDesignRequest.objects.none()
+        return CustomDesignRequest.objects
     
     def perform_create(self, serializer):
         if self.request.user.user_type != 'buyer':

@@ -18,9 +18,11 @@ class Order(models.Model):
     on_delete=models.CASCADE,
     null=True,
     blank=True,
-    related_name='orders'
+    related_name='orders',
+    limit_choices_to={'user_type': 'buyer'}
+
 )
-    artisan = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, limit_choices_to={'user_type': 'ARTISAN'})
+    artisan = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, limit_choices_to={'user_type': 'artisan'})
     order_type = models.CharField(max_length=20, choices=ORDER_TYPE_CHOICES)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     quantity = models.IntegerField(default=1, validators=[MinValueValidator(1)])
@@ -50,13 +52,14 @@ class CustomDesignRequest(models.Model):
     buyer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='custom_requests_as_buyer'
+        related_name='custom_requests_as_buyer',limit_choices_to={'user_type': 'buyer'}
         
     )
     artisan = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='custom_requests_as_artisan'
+        related_name='custom_requests_as_artisan',
+        limit_choices_to={'user_type': 'artisan'}
     )
     description = models.TextField()
     reference_images = models.URLField(blank=True, null=True)
@@ -74,16 +77,17 @@ class OrderStatus(models.Model):
         ('completed', 'Completed')
     ]
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
-    artisan = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    artisan = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,limit_choices_to={'user_type': 'artisan'})
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     description = models.TextField(blank=True, null=True)
     image = models.ImageField(upload_to='order_images/')
     buyer_approval = models.BooleanField(default=False)
     approval_timestamp = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
 class Rating(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
-    buyer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='ratings_given')
+    buyer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='ratings_given',limit_choices_to={'user_type': 'buyer'})
     rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     review_text = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

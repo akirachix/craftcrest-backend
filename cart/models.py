@@ -28,4 +28,8 @@ class ShoppingCart(models.Model):
     updated_at=models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.first_name}'s shopping cart"   
+
+        if self.user is not None:
+            return f"{self.user.first_name}'s shopping cart"
+        return "Shopping cart with no user"
+ 
