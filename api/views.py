@@ -5,6 +5,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import NotFound
+from django.core.exceptions import ValidationError
+
 from users.models import User, ArtisanPortfolio, Profile
 import django_filters.rest_framework
 from django_filters.rest_framework import DjangoFilterBackend
@@ -42,9 +44,7 @@ from orders.models import Order
 from django.utils import timezone
 import datetime
 from .daraja import DarajaAPI
-from rest_framework.permissions import IsAuthenticated
 from .serializers import ShoppingCartSerializer,InventorySerializer
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from products.models import Inventory
 from cart.models import ShoppingCart, Item
 from django.shortcuts import render
@@ -211,6 +211,7 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
 class ItemViewSet(viewsets.ModelViewSet):
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
+    permission_classes = [IsAuthenticated]
     
 
     
