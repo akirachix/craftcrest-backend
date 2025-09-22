@@ -23,10 +23,10 @@ from decouple import config
 load_dotenv()  
 SECRET_KEY = os.getenv('SECRET_KEY')
 
+
 LOCATIONIQ_API_KEY = os.getenv('LOCATIONIQ_API_KEY')
 
-from dotenv import load_dotenv
-load_dotenv()
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
@@ -36,6 +36,7 @@ DARAJA_CONSUMER_SECRET = os.getenv("DARAJA_CONSUMER_SECRET")
 DARAJA_SHORTCODE = os.getenv("DARAJA_SHORTCODE")
 DARAJA_PASSKEY = os.getenv("DARAJA_PASSKEY")
 DARAJA_CALLBACK_URL = os.getenv("DARAJA_CALLBACK_URL")
+
 DARAJA_INITIATOR_NAME = os.getenv("DARAJA_INITIATOR_NAME")
 DARAJA_SECURITY_CREDENTIAL = os.getenv("DARAJA_SECURITY_CREDENTIAL")
 DARAJA_B2C_TIMEOUT_URL = os.getenv("DARAJA_B2C_TIMEOUT_URL")
@@ -208,7 +209,7 @@ LOGIN_REDIRECT_URL = '/admin/'
 LOGOUT_REDIRECT_URL = '/'
 
 
-LOCATIONIQ_API_KEY = os.getenv('LOCATIONIQ_API_KEY')
+
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'CraftCrest API',

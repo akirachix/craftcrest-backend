@@ -23,7 +23,7 @@ from orders.models import Order
 from .daraja import DarajaAPI
 from payments.models import Payment
 from orders.models import Order
-from rest_framework import serializers
+
 
 
 class PortfolioImageSerializer(serializers.ModelSerializer):
@@ -400,12 +400,10 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
 class RatingSerializer(serializers.ModelSerializer):
-    order = OrderSerializer(read_only=True)
-
     class Meta:
         model = Rating
-        fields = ['order','buyer','rating','review_text']
-        read_only_fields = ['rating_id', 'created_at']
+        fields = '__all__'
+        
 
     def validate_rating(self, value):
         if not 1 <= value <= 5:
@@ -413,12 +411,10 @@ class RatingSerializer(serializers.ModelSerializer):
         return value
 
 class OrderStatusSerializer(serializers.ModelSerializer):
-    order = OrderSerializer(read_only=True)
-
     class Meta:
         model = OrderStatus
-        fields = '__all__'
-        read_only_fields = ['tracking_id', 'update_timestamp', 'created_at', 'approval_timestamp']
+        fields ='__all__'
+       
 
 class CustomDesignRequestSerializer(serializers.ModelSerializer):
     class Meta:
