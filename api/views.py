@@ -205,6 +205,7 @@ class UserViewSet(viewsets.ModelViewSet):
 class ShoppingCartViewSet(viewsets.ModelViewSet):
     queryset = ShoppingCart.objects.all()
     serializer_class = ShoppingCartSerializer
+    permission_classes = [IsAuthenticated]
     
 
 class ItemViewSet(viewsets.ModelViewSet):
