@@ -13,6 +13,14 @@ class Order(models.Model):
         ('completed', 'Completed'),
     ]
     cart = models.ForeignKey(ShoppingCart, on_delete=models.CASCADE, null=True, blank=True)
+    buyer = models.ForeignKey(
+    settings.AUTH_USER_MODEL,
+    on_delete=models.CASCADE,
+    null=True,
+    blank=True,
+    related_name='orders'
+)
+    artisan = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, limit_choices_to={'user_type': 'ARTISAN'})
     order_type = models.CharField(max_length=20, choices=ORDER_TYPE_CHOICES)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     quantity = models.IntegerField(default=1, validators=[MinValueValidator(1)])
