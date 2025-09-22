@@ -5,6 +5,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import NotFound
+from django.core.exceptions import ValidationError
+
 from users.models import User, ArtisanPortfolio, Profile
 import django_filters.rest_framework
 from django_filters.rest_framework import DjangoFilterBackend
@@ -22,16 +24,11 @@ from .serializers import (
 from users.permissions import AdminPermission, ArtisanPermission
 
 from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status, viewsets
 from .utils import haversine
 from users.models import User, ArtisanPortfolio, ArtisanProfile
 from api.serializers import UserSerializer, NearbyArtisanSearchSerializer
 import logging
 
-from rest_framework import viewsets, status
-from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from .serializers import (
     STKPushSerializer,
@@ -47,9 +44,7 @@ from orders.models import Order
 from django.utils import timezone
 import datetime
 from .daraja import DarajaAPI
-from rest_framework.permissions import IsAuthenticated
 from .serializers import ShoppingCartSerializer,InventorySerializer
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from products.models import Inventory
 from cart.models import ShoppingCart, Item
 from django.shortcuts import render
@@ -211,16 +206,19 @@ class ShoppingCartViewSet(viewsets.ModelViewSet):
     queryset = ShoppingCart.objects.all()
     serializer_class = ShoppingCartSerializer
     permission_classes = [IsAuthenticated]
+    
 
 class ItemViewSet(viewsets.ModelViewSet):
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
     permission_classes = [IsAuthenticated]
+    
 
     
 class InventoryViewSet(viewsets.ModelViewSet):
     queryset = Inventory.objects.all()
     serializer_class = InventorySerializer
+    
    
     def get_queryset(self):
 
@@ -228,6 +226,7 @@ class InventoryViewSet(viewsets.ModelViewSet):
         if artisan_id:
             return self.queryset.filter(artisan_id=artisan_id)
         return self.queryset
+    
 
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
@@ -239,7 +238,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             return Order.objects.filter(buyer_id=user)
         elif hasattr(user, 'artisan_orders'):
             return Order.objects.filter(artisan_id=user)
-        return Order.objects.none()
+        return Order.objects
 
     def confirm_payment(self, request, pk=None):
         order = self.get_object()
@@ -271,7 +270,7 @@ class CustomDesignRequestViewSet(viewsets.ModelViewSet):
             return CustomDesignRequest.objects.filter(buyer_id=user)
         elif hasattr(user, 'artisan_requests'):
             return CustomDesignRequest.objects.filter(artisan_id=user)
-        return CustomDesignRequest.objects.none()
+        return CustomDesignRequest.objects
     
     def perform_create(self, serializer):
         if self.request.user.user_type != 'buyer':

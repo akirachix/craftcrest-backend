@@ -55,13 +55,12 @@ class DarajaAPI:
 
     def b2c_payment(self, artisan_phone, amount, transaction_id, transaction_desc, occassion=""):
         access_token = self.get_access_token()
-        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        data_to_encode = f"{self.business_shortcode}{self.passkey}{timestamp}"
-        password = base64.b64encode(data_to_encode.encode("utf-8")).decode("utf-8")
+    
         headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json",
         }
+
         payload = {
             "InitiatorName": settings.DARAJA_INITIATOR_NAME,
             "SecurityCredential": settings.DARAJA_SECURITY_CREDENTIAL,
