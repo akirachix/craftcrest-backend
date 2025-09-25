@@ -12,6 +12,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
@@ -24,6 +25,7 @@ class CustomUserManager(BaseUserManager):
         return user
 
     def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault('type','ADMIN')
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('username', None)
@@ -35,12 +37,15 @@ class CustomUserManager(BaseUserManager):
 
         return self.create_user(email, password, **extra_fields)
 
+        
 class User(AbstractUser):
     ARTISAN = 'artisan'
     BUYER = 'buyer'
+    ADMIN = 'admin'
     USER_TYPE_CHOICES = [
         (ARTISAN, 'Artisan'),
         (BUYER, 'Buyer'),
+        (ADMIN, 'Admin'),
     ]
     user_type = models.CharField(
         max_length=10,
