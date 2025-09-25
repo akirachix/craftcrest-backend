@@ -38,9 +38,11 @@ class CustomUserManager(BaseUserManager):
 class User(AbstractUser):
     ARTISAN = 'artisan'
     BUYER = 'buyer'
+    ADMIN = 'admin'
     USER_TYPE_CHOICES = [
         (ARTISAN, 'Artisan'),
         (BUYER, 'Buyer'),
+        (ADMIN, 'Admin'),
     ]
     user_type = models.CharField(
         max_length=10,
