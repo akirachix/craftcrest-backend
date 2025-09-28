@@ -9,8 +9,7 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-DEBUG = False
-ALLOWED_HOSTS = ["*"]
+
 import dj_database_url
 import os
 from pathlib import Path
@@ -47,19 +46,20 @@ DARAJA_B2C_RESULT_URL = os.getenv("DARAJA_B2C_RESULT_URL")
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(dotenv_path=BASE_DIR / '.env')
+DEBUG = os.getenv('DEBUG', 'False').lower() in ['true', '1', 'yes']
 
 
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 SECRET_KEY = config('SECRET_KEY', default='craftcrestapp@2025')
+DEBUG = True
+ALLOWED_HOSTS = ["*"]
 
-
-DEBUG = config('DEBUG', default=True, cast=bool)
 
 # ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1:8000/').split(',')
 
