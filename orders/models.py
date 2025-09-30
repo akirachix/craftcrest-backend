@@ -21,7 +21,8 @@ class Order(models.Model):
     related_name='orders',
     limit_choices_to={'user_type': 'buyer'}
 
-)
+)   
+    product = models.ForeignKey(Inventory,on_delete=models.CASCADE, null=True, blank=True)
     artisan = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, limit_choices_to={'user_type': 'artisan'})
     order_type = models.CharField(max_length=20, choices=ORDER_TYPE_CHOICES)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
