@@ -219,13 +219,8 @@ class InventoryViewSet(viewsets.ModelViewSet):
     queryset = Inventory.objects.all()
     serializer_class = InventorySerializer
     
+    
    
-    def get_queryset(self):
-
-        artisan_id = self.request.query_params.get('artisan')
-        if artisan_id:
-            return self.queryset.filter(artisan_id=artisan_id)
-        return self.queryset
     
 
 class OrderViewSet(viewsets.ModelViewSet):
