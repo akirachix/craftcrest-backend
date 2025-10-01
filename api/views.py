@@ -258,7 +258,8 @@ class OrderStatusViewSet(viewsets.ModelViewSet):
 class CustomDesignRequestViewSet(viewsets.ModelViewSet):
     queryset = CustomDesignRequest.objects.all()
     serializer_class = CustomDesignRequestSerializer
-
+    permission_classes = [IsAuthenticated]
+    
     def get_queryset(self):
         user = self.request.user
         if hasattr(user, 'buyer_requests'):
