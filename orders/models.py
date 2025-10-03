@@ -63,15 +63,19 @@ class CustomDesignRequest(models.Model):
         limit_choices_to={'user_type': 'artisan'}
     )
     product = models.ForeignKey(Inventory,on_delete=models.CASCADE, null=True, blank=True)
-    description = models.TextField()
+    is_accepted = models.BooleanField(default=False)
+    description = models.TextField(null=True, blank=True)
     reference_images = models.ImageField(upload_to='reference_images/', default=None)
-    deadline = models.DateField()
+    deadline = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='material_sourcing')
-    quote_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    artisan_uploads = models.ImageField(upload_to='order_images/',default=None)
-    material_price = models.DecimalField(max_digits=10, decimal_places=2)
-    labour_price = models.DecimalField(max_digits=10, decimal_places=2)
+    quote_amount = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
+    material_price = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
+    labour_price = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
     created_at = models.DateField(auto_now_add=True)
+
+class ArtisanUploadImage(models.Model):
+    custom_request = models.ForeignKey(CustomDesignRequest, on_delete=models.CASCADE, related_name='artisan_uploads')
+    images =models.ImageField(upload_to='order_images/')
 
 class OrderStatus(models.Model):
     STATUS_CHOICES = [

@@ -11,15 +11,13 @@ from rest_framework.authtoken.models import Token
 from users.models import User, ArtisanPortfolio, Profile, PortfolioImage, ArtisanProfile
 from users.utils import send_otp_email
 from rest_framework import serializers
-
 from django.conf import settings
 import requests
 from products.models import Inventory
 from cart.models import ShoppingCart , Item
 from django.conf import settings
-from orders.models import Order, Rating, OrderStatus, CustomDesignRequest
+from orders.models import Order, Rating, OrderStatus, CustomDesignRequest,ArtisanUploadImage
 from orders.models import Order
-
 from .daraja import DarajaAPI
 from payments.models import Payment
 from orders.models import Order
@@ -181,7 +179,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["email", "full_name", "phone_number", "image", "user_type"]
+        fields = ["id","email", "full_name", "phone_number", "image", "user_type"]
         read_only_fields = ["email", "user_type", "image"]
 
     def get_full_name(self, obj):
@@ -422,7 +420,20 @@ class CustomDesignRequestSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['request_id', 'created_at']
 
+class ArtisanUploadImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ArtisanUploadImage
+        fields = ["id", "image"]
+        read_only_fields = ["id"]
 
+class ArtisanUploadImageSerializer(serializers.ModelSerializer):
+    image_file = serializers.ListField(
+        child=serializers.ImageField(),
+        write_only=True,
+        required=True,
+        min_length=3
+    )
+    images = PortfolioImageSerializer(many=True, read_only=True)
 
 
 class PaymentSerializer(serializers.ModelSerializer):
