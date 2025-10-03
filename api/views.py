@@ -259,32 +259,6 @@ class CustomDesignRequestViewSet(viewsets.ModelViewSet):
     queryset = CustomDesignRequest.objects.all()
     serializer_class = CustomDesignRequestSerializer
 
-    def get_queryset(self):
-        user = self.request.user
-        if hasattr(user, 'buyer_requests'):
-            return CustomDesignRequest.objects.filter(buyer_id=user)
-        elif hasattr(user, 'artisan_requests'):
-            return CustomDesignRequest.objects.filter(artisan_id=user)
-        return CustomDesignRequest.objects
-    
-    def perform_create(self, serializer):
-        if self.request.user.user_type != 'buyer':
-            raise PermissionDenied("Only buyers can create custom design requests.")
-        serializer.save(buyer_id=self.request.user)
-
-    def accept_request(self, request, pk=None):
-        custom_request = self.get_object()
-        if self.request.user.user_type != 'artisan':
-            raise PermissionDenied("Only artisans can accept custom design requests.")
-        if custom_request.artisan_id != self.request.user:
-            raise PermissionDenied("You are not assigned to this request.")
-        if custom_request.status != 'pending':
-            raise ValidationError("Request is not pending.")
-        custom_request.status = 'accepted'
-        custom_request.save()
-        return Response({"message": "Custom design request accepted", "status": custom_request.status})
-
-
 class PaymentViewSet(viewsets.ModelViewSet):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
