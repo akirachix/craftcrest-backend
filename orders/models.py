@@ -46,8 +46,6 @@ class CustomDesignRequest(models.Model):
     STATUS_CHOICES = [
         ('material-sourcing', 'Material-sourcing'),
         ('in-progress', 'In-progress'),
-        ('rejected', 'Rejected'),
-        ('accepted', 'Accepted'),
         ('completed', 'Completed'),
     ]
     buyer = models.ForeignKey(
@@ -62,15 +60,22 @@ class CustomDesignRequest(models.Model):
         related_name='custom_requests_as_artisan',
         limit_choices_to={'user_type': 'artisan'}
     )
-    description = models.TextField()
-    reference_images = models.URLField(blank=True, null=True)
+    product = models.ForeignKey(Inventory,on_delete=models.CASCADE, null=True, blank=True)
+    is_accepted = models.BooleanField(default=False)
+    description = models.TextField(null=True, blank=True)
+    reference_images = models.ImageField(upload_to='reference_images/', default=None)
     deadline = models.DateField()
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='material_sourced')
-    quote_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    material_price = models.DecimalField(max_digits=10, decimal_places=2)
-    labour_price = models.DecimalField(max_digits=10, decimal_places=2)
+    quote_amount = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
+    material_price = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
+    labour_price = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
     created_at = models.DateField(auto_now_add=True)
 
+
+class ArtisanUploadImage(models.Model):
+    custom_request = models.ForeignKey(CustomDesignRequest, on_delete=models.CASCADE, related_name='artisan_uploads')
+    images =models.ImageField(upload_to='order_images/')
+    
 class OrderStatus(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
