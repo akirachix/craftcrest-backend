@@ -22,6 +22,13 @@ class Order(models.Model):
     limit_choices_to={'user_type': 'buyer'}
 
 )   
+    custom_request = models.ForeignKey(
+        "CustomDesignRequest",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='orders'
+    )
     product = models.ForeignKey(Inventory,on_delete=models.CASCADE, null=True, blank=True)
     artisan = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, limit_choices_to={'user_type': 'artisan'})
     order_type = models.CharField(max_length=20, choices=ORDER_TYPE_CHOICES)
