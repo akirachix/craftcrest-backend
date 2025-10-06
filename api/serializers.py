@@ -429,12 +429,19 @@ class CustomDesignRequestSerializer(serializers.ModelSerializer):
         required=True,
         min_length=3
     )
-    images = ArtisanUploadImageSerializer(many=True, read_only=True)
+    artisan_uploads = ArtisanUploadImageSerializer(many=True, read_only=True)
 
     class Meta:
         model = CustomDesignRequest
         fields = '__all__'
-        read_only_fields = ['request_id', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+    def create(self, validated_data):
+        images = validated_data.pop('image_file')
+        custom_request = CustomDesignRequest.objects.create(**validated_data)
+        for image in images:
+            ArtisanUploadImage.objects.create(custom_request=custom_request, image=image)
+        return custom_request
 
 
 

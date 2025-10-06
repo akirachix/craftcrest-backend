@@ -74,7 +74,7 @@ class CustomDesignRequest(models.Model):
 
 class ArtisanUploadImage(models.Model):
     custom_request = models.ForeignKey(CustomDesignRequest, on_delete=models.CASCADE, related_name='artisan_uploads')
-    images =models.ImageField(upload_to='order_images/')
+    image =models.ImageField(upload_to='order_images/')
     
 class OrderStatus(models.Model):
     STATUS_CHOICES = [
